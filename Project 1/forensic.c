@@ -1,9 +1,28 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <stdlib.h>
+
+void signal_handler(int signo) //handler do sinal
+{
+    sleep(10);
+    exit(0);
+
+} 
 
 int main (int argc, char *argv[], char *envp[]){
 
+	struct sigaction action;
+    	action.sa_handler = signal_handler;
+    	sigemptyset(&action.sa_mask);
+
+    	if (sigaction(SIGINT,&action,NULL) < 0) //tratamento de sinal associado ao ctrl+c
+    	{
+      	  fprintf(stderr,"Unable to install SIGTERM handler\n");
+      	  exit(1);
+    	}
+	
 	//File or Dir path
 	char* filepath;
 	//-r flag, analyse all filesand subdirectories
