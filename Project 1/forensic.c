@@ -29,8 +29,7 @@ int analyze_file (char *filepath) {
 	*/
 	
 	struct stat statdata;
-	struct tm ct, mt;
-	char *creation_time = (char*) malloc (19);
+	struct tm mt;
 	char *mod_time = (char*) malloc (19);
 	
 	if (stat(filepath, &statdata) < 0){
@@ -38,20 +37,15 @@ int analyze_file (char *filepath) {
 		exit(1);	
 	}
 	
-	localtime_r(&statdata.st_ctime, &ct);
 	localtime_r(&statdata.st_mtime, &mt);
-	sprintf(creation_time, "%d-%d-%dT%d:%d:%d", 1900 + ct.tm_year, ct.tm_mon, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec);
 	sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + mt.tm_year, mt.tm_mon, mt.tm_mday, mt.tm_hour, mt.tm_min, mt.tm_sec);
 	
 	//DEBUG
-	printf("file_name,file_type,%ld,file access (parse st_mode),%s,%s\n", statdata.st_size, creation_time,mod_time);
+	printf("file_name,file_type,%ld,file access (parse st_mode),%s\n", statdata.st_size, mod_time);
 	
-	free(creation_time);
 	free(mod_time);
 	
 	return 0;
-	
-	
 }
 
 int main (int argc, char *argv[], char *envp[]){
