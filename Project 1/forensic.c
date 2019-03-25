@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <signal.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#include <signal.h>
 
 void signal_handler(int signo) //handler do sinal
 {
