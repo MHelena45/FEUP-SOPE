@@ -15,7 +15,7 @@ void signal_handler(int signo) //handler do sinal
 
 } 
 
-int analyze_file (char *filepath) {
+int analyze_path (char *filepath) {
 	/*
 		Comando stat(man 2 stat), da um struct com file_size(st_size), file_access(st_mode), 
 		file_modification_date(st_mtime), file_created(st_ctime, last status change?)	
@@ -30,20 +30,30 @@ int analyze_file (char *filepath) {
 	
 	struct stat statdata;
 	struct tm mt;
-	char *mod_time = (char*) malloc (19);
 	
 	if (stat(filepath, &statdata) < 0){
 		perror("Error");
 		exit(1);	
 	}
 	
-	localtime_r(&statdata.st_mtime, &mt);
-	sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + mt.tm_year, mt.tm_mon, mt.tm_mday, mt.tm_hour, mt.tm_min, mt.tm_sec);
+	if (S_ISDIR(statdata.st_mode)){ //Directory
+		printf("This is a directory, TODO\n");
+		exit(2);
+	}
+	else { //Not a directory, regular file, symbolic link, etc
+		char *mod_time = (char*) malloc (19);
+		localtime_r(&statdata.st_mtime, &mt);
+		sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + mt.tm_year, mt.tm_mon, mt.tm_mday, mt.tm_hour, mt.tm_min, mt.tm_sec);
 	
-	//DEBUG
-	printf("file_name,file_type,%ld,file access (parse st_mode),%s\n", statdata.st_size, mod_time);
+		//DEBUG
+		printf("file_name,file_type,%ld,file access (parse st_mode),%s\n", statdata.st_size, mod_time);
 	
-	free(mod_time);
+		free(mod_time);
+	}
+	
+	
+	
+	
 	
 	return 0;
 }
@@ -111,5 +121,6 @@ int main (int argc, char *argv[], char *envp[]){
 	}
 	
 	filepath = argv[argc-1];
-	analyze_file(filepath);//Testar um ficheiro para ja
+	analyze_path(filepath);//Testar um ficheiro para ja
+	exit(0);
 }
