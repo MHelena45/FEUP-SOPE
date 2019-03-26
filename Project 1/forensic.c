@@ -21,7 +21,7 @@ void sigint_handler(int signo) //handler do sinal
 
 }
 
-int analyze_file (char *filepath, struct stat *statdata, char *filename){
+int analyze_file (char *filepath, struct stat *statdata){
 	
 	/*
 		TO-DO:
@@ -37,7 +37,7 @@ int analyze_file (char *filepath, struct stat *statdata, char *filename){
 		sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + mt.tm_year, mt.tm_mon, mt.tm_mday, mt.tm_hour, mt.tm_min, mt.tm_sec);
 	
 		//DEBUG
-		printf("%s,file_type,%ld,file access (parse st_mode),%s\n", filename, statdata->st_size, mod_time);
+		printf("%s,file_type,%ld,file access (parse st_mode),%s\n", filepath, statdata->st_size, mod_time);
 	
 		free(mod_time);
 		return 0;
@@ -79,11 +79,11 @@ int analyze_path (char *filepath) {
 			}
 			//Check if file
 			if (S_ISREG(temp_stat.st_mode))
-				analyze_file(temp_filename, &temp_stat, dir->d_name);
+				analyze_file(temp_filename, &temp_stat);
 		}
 	}
 	else { //Not a directory, regular file, symbolic link, etc
-		analyze_file(filepath, &statdata, filepath);
+		analyze_file(filepath, &statdata);
 	}
 		
 	return 0;
