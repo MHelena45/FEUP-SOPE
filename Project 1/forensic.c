@@ -20,13 +20,10 @@ void sigint_handler(int signo) //handler do sinal
     exit(0);
 
 }
+
 int analyze_file (char *filepath, struct stat *statdata, char *filename){
 	
-		/*
-		Comando stat(man 2 stat), da um struct com file_size(st_size), file_access(st_mode), 
-		file_modification_date(st_mtime), file_created(st_ctime, last status change?)	
-		Comando file da file_type(?)
-		
+	/*
 		TO-DO:
 			-chamar comando file, para obter file type
 			-Formatar informaçao st_mode, (owner, group, others?)
@@ -57,8 +54,6 @@ int analyze_path (char *filepath) {
 	
 	if (S_ISDIR(statdata.st_mode)){ //Directory
 		
-		printf("This is a directory, TODO\n");
-		
 		DIR *c_dir;
 		struct dirent *dir;
 		char temp_filename[257];
@@ -71,10 +66,18 @@ int analyze_path (char *filepath) {
 			
 			struct stat temp_stat;
 			sprintf(temp_filename, "%s/%s", filepath, dir->d_name);
+			
+			//Check if path exists
 			if (stat(temp_filename, &temp_stat) < 0){
 				perror("Error");
 				exit(1);	
 			}
+			//Check if Directory
+			if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.'){
+				analyze_path(temp_filename);
+				continue;
+			}
+			//Check if file
 			if (S_ISREG(temp_stat.st_mode))
 				analyze_file(temp_filename, &temp_stat, dir->d_name);
 		}
