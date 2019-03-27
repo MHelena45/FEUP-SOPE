@@ -57,7 +57,11 @@ int analyze_path (char *filepath) {
 	}
 	
 	if (S_ISDIR(statdata.st_mode)){ //Directory
-		
+		if (sigaction(SIGUSR1 ,&action,NULL) < 0) //increments directory number
+		{
+			fprintf(stderr,"Unable to install SIGTERM handler\n");
+			exit(1);
+		}
 		DIR *c_dir;
 		struct dirent *dir;
 		char temp_filename[257];
@@ -90,6 +94,11 @@ int analyze_path (char *filepath) {
 		}
 	}
 	else { //Not a directory, regular file, symbolic link, etc
+		if (sigaction(SIGUSR2 ,&action,NULL) < 0) //increments file number
+		{
+			fprintf(stderr,"Unable to install SIGTERM handler\n");
+			exit(1);
+		}
 		analyze_file(filepath, &statdata);
 	}
 		
