@@ -1,5 +1,21 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#include <signal.h>
+
+
 void sigint_handler(int signo) //handler do sinal
-{		
+{
+	/*Quando recebe o comando ctrl+c o programa e todos os processos filhos tem que terminar quando 
+	ja nao tiver operaçoes pendentes.
+	*/
+	
     sleep(10);
     exit(0);
 
@@ -50,6 +66,7 @@ int analyze_path (char *filepath) {
 			
 			struct stat temp_stat;
 			sprintf(temp_filename, "%s/%s", filepath, dir->d_name);
+			//int status;
 			
 			//Check if path exists
 			if (stat(temp_filename, &temp_stat) < 0){
@@ -58,8 +75,10 @@ int analyze_path (char *filepath) {
 			}
 			//Check if Directory
 			if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.'){
-				analyze_path(temp_filename);
-				continue;
+				if (fork() > 0){
+					analyze_path(temp_filename);
+				}
+				else continue;
 			}
 			//Check if file
 			if (S_ISREG(temp_stat.st_mode))
