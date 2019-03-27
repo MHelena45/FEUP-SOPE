@@ -9,15 +9,19 @@
 #include <time.h>
 #include <signal.h>
 
-
+int nDirectory, nFiles;
 void sigint_handler(int signo) //handler do sinal
 {
-	/*Quando recebe o comando ctrl+c o programa e todos os processos filhos tem que terminar quando 
-	ja nao tiver operaçoes pendentes.
-	*/
-	
-    sleep(10);
-    exit(0);
+	if(signo == SIGUSR1){
+		nDirectory++;
+		printf("New directory: %i/ %i directories/files at this time.", nDirectory, nFiles);
+	}
+	if(signo == SIGUSR2){
+		nFiles++;
+    }
+	if(signo == SIGINT){
+		exit(0);
+	}
 
 }
 
