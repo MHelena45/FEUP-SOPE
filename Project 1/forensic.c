@@ -9,12 +9,12 @@
 #include <time.h>
 #include <signal.h>
 
-#define MD5 1
-#define SHA1 2
-#define SHA256 3
+#define MD5 0b001;
+#define SHA1 0b010;
+#define SHA256 0b100;
 
 struct Options {
-	int hashmode;
+    uint8_t hashmode;
 };
 
 int nDirectory, nFiles;
@@ -127,18 +127,18 @@ int analyze_path (char *filepath) {
 }
 
 bool checkHashMode(char *hashMode) {
-    if (strcmp(hashMode,"md5")) {
-        options.hashmode = MD5;
+    if (!strcmp(hashMode,"md5")) {
+        options.hashmode |= MD5;
         return true;
     }
 
-    if (strcmp(hashMode,"sha1")) {
-        options.hashmode = SHA1;
+    if (!strcmp(hashMode,"sha1")) {
+        options.hashmode |= SHA1;
         return true;
     }
 
-    if (strcmp(hashMode,"sha256")) {
-        options.hashmode = SHA256;
+    if (!strcmp(hashMode,"sha256")) {
+        options.hashmode |= SHA256;
         return true;
     }
 
@@ -146,7 +146,7 @@ bool checkHashMode(char *hashMode) {
 }
 
 int main (int argc, char *argv[], char *envp[]){
-	
+    options.hashmode = 0b000;
 	struct sigaction action;
 	action.sa_handler = sigint_handler;
 	sigemptyset(&action.sa_mask);
@@ -173,23 +173,23 @@ int main (int argc, char *argv[], char *envp[]){
 			continue;
 		}
 		
-		//TODO: Verify if correct argument(md5, sha1, sha256)
-		if (!strcmp(argv[i], "-h")){
-			if (i < argc - 2){
-				if (checkHashMode(argv[i+1])) {
-					++i;
-					continue;
-				} else {
-					printf("Invalid parameter for hash function: [md5,sha1,sha256]");
-				}
+        if (!strcmp(argv[i], "-h")){
+            if (i < argc - 2) {
+                char *ptr = strtok(argv[i + 1], ",");
+                while (ptr != NULL) {
+                    if (!checkHashMode(ptr)) {
+                        printf("Invalid parameter for hash function: [md5,sha1,sha256]");
+                    }
+                    ptr = strtok(NULL,",");
+                }
+                ++i;
+                continue;
+            } else {
+                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
+                exit(1);
+            }
+        }
 
-			}
-			else {
-				printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
-				exit(1);
-			}
-		}
-		
 		if (!strcmp(argv[i], "-v")){
 			v_command = true;
 			continue;
