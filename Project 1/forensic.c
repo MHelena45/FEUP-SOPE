@@ -44,21 +44,31 @@ int analyze_file (char *filepath, struct stat *statdata){
                 - sha256sum -> shasum -a 256 in MACOS
     */
 
+    //Modification Time
     struct tm mt;
     char *mod_time = (char*) malloc (19);
     localtime_r(&statdata->st_mtime, &mt);
     sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + mt.tm_year, mt.tm_mon, mt.tm_mday, mt.tm_hour, mt.tm_min, mt.tm_sec);
 
+    //Access Time
     struct tm ct;
     char *acc_time = (char*) malloc (19);
     localtime_r(&statdata->st_ctime, &ct);
     sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + ct.tm_year, ct.tm_mon, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec);
 
-    //DEBUG
-    printf("%s,file_type,%ld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
+    char out_message[255];
 
+    //DEBUG
+    sprintf(out_message, "%s,file_type,%ld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
+
+    if (options.o_command == NULL)
+        printf("%s", out_message);
+    /*
+    else write to file
+     */
     free(mod_time);
     free(acc_time);
+
     return 0;
 }
 
@@ -226,6 +236,6 @@ int main (int argc, char *argv[], char *envp[]){
     }
 
     filepath = argv[argc-1];
-    analyze_path(filepath);//Testar um ficheiro para ja
+    analyze_path(filepath);
     exit(0);
 }
