@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdint.h>
+#include <wait.h>
 #include "forensic.h"
 
 
@@ -57,15 +58,19 @@ int analyze_file (char *filepath, struct stat *statdata){
     sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + ct.tm_year, ct.tm_mon, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec);
 
     char out_message[255];
-
-    //DEBUG
     sprintf(out_message, "%s,file_type,%ld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
 
     if (options.o_command == NULL)
         printf("%s", out_message);
-    /*
-    else write to file
-     */
+    else {
+        FILE *out_file;
+        out_file = fopen (options.o_command, "a");
+        if (out_file != NULL){
+            fputs(out_message, out_file);
+            fclose(out_file);
+        }
+    }
+
     free(mod_time);
     free(acc_time);
 
@@ -129,9 +134,12 @@ int analyze_path (char *filepath) {
             //Check if Directory
             if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.' ){
                 if (fork() > 0){
+                    continue;
+                }
+                else {
                     analyze_path(temp_filename);
                 }
-                else continue;
+                exit(0);
             }
         }
     }
@@ -183,13 +191,12 @@ int main (int argc, char *argv[], char *envp[]){
         exit(1);
     }
 
-    char* filepath;	//File or Dir path
-
-
     if (argc < 2){	/* Needs at least one argument */
         printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
         exit(1);
     }
+
+    char* filepath = argv[argc-1];;	//File or Dir path
 
     for (int i = 1; i < argc - 1; ++i){	/* Parse arguments */
 
@@ -224,6 +231,7 @@ int main (int argc, char *argv[], char *envp[]){
         if (!strcmp(argv[i], "-o")){
             if (i < argc - 2){
                 options.o_command = argv[i+1];
+                remove(options.o_command); //Delete file if it already exists
                 ++i;
                 continue;
             }
@@ -234,8 +242,9 @@ int main (int argc, char *argv[], char *envp[]){
         }
 
     }
-
-    filepath = argv[argc-1];
     analyze_path(filepath);
+    if (options.o_command != NULL)
+        printf("Data saved on file %s\n", options.o_command);
+
     exit(0);
 }
