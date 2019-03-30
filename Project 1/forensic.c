@@ -14,21 +14,27 @@
 
 struct Options options;
 
-void sigint_handler(int signo) //handler do sinal
+void sig_handler(int signo) //handler do sinal
 {
-
-    static int nDirectory = 0, nFiles = 0;
-    if(signo == SIGUSR1){
-        nDirectory++;
-        printf("New directory: %i/ %i directories/files at this time.", nDirectory, nFiles);
+    static int nDirectory = 0;
+    static int nFiles = 0;
+    
+    switch(signo){
+        case SIGUSR1:{
+            nDirectory++;
+            if (options.o_command != NULL) {
+                char mess[100];
+                sprintf(mess, "New directory: %i/ %i directories/files at this time.\n", nDirectory, nFiles);
+                append_to_file(mess, options.o_command);
+            }
+            break;
+        }
+        case SIGUSR2: {
+            nFiles++;
+            break;
+        }
+        case SIGINT: exit(0);
     }
-    if(signo == SIGUSR2){
-        nFiles++;
-    }
-    if(signo == SIGINT){
-        exit(0);
-    }
-
 }
 
 int analyze_file (char *filepath, struct stat *statdata){
@@ -44,6 +50,11 @@ int analyze_file (char *filepath, struct stat *statdata){
                 - sha1sum -> shasum -a 1 in MACOS
                 - sha256sum -> shasum -a 256 in MACOS
     */
+
+
+    /*int killstatus = kill(options.parent_id, SIGUSR2);
+    while (killstatus)
+        killstatus = kill(options.parent_id, SIGUSR2);*/
 
     //Modification Time
     struct tm mt;
@@ -62,14 +73,7 @@ int analyze_file (char *filepath, struct stat *statdata){
 
     if (options.o_command == NULL)
         printf("%s", out_message);
-    else {
-        FILE *out_file;
-        out_file = fopen (options.o_command, "a");
-        if (out_file != NULL){
-            fputs(out_message, out_file);
-            fclose(out_file);
-        }
-    }
+    else append_to_file(out_message, options.o_command);
 
     free(mod_time);
     free(acc_time);
@@ -80,9 +84,6 @@ int analyze_file (char *filepath, struct stat *statdata){
 int analyze_path (char *filepath) {
 
     struct stat statdata;
-    struct sigaction action;
-    action.sa_handler = sigint_handler;
-    sigemptyset(&action.sa_mask);
 
     if (stat(filepath, &statdata) < 0){
         perror("Error");
@@ -90,11 +91,10 @@ int analyze_path (char *filepath) {
     }
 
     if (S_ISDIR(statdata.st_mode)){ //Directory
-        if (sigaction(SIGUSR1 ,&action,NULL) < 0) //increments directory number
-        {
-            fprintf(stderr,"Unable to install SIGTERM handler\n");
-            exit(1);
-        }
+
+        /*int killstatus = kill(options.parent_id, SIGUSR1);
+        while (killstatus)
+            killstatus = kill(options.parent_id, SIGUSR1);*/
 
         DIR *c_dir;
         struct dirent *dir;
@@ -134,23 +134,22 @@ int analyze_path (char *filepath) {
             //Check if Directory
             if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.' ){
                 if (fork() > 0){
+                    wait(NULL);
                     continue;
                 }
                 else {
                     analyze_path(temp_filename);
+                    exit(0);
                 }
-                exit(0);
+
             }
         }
+
     }
     else { //Single file
-        if (sigaction(SIGUSR2 ,&action,NULL) < 0) //increments file number
-        {
-            fprintf(stderr,"Unable to install SIGTERM handler\n");
-            exit(1);
-        }
         analyze_file(filepath, &statdata);
     }
+
 
     return 0;
 }
@@ -174,20 +173,43 @@ bool checkHashMode(char *hashMode) {
     return false;
 }
 
+void append_to_file(char *message, char *filepath){
+    FILE *out_file;
+    out_file = fopen (filepath, "a");
+    if (out_file != NULL){
+        fputs(message, out_file);
+        fclose(out_file);
+    }
+}
+
 int main (int argc, char *argv[], char *envp[]){
 
     options.hashmode = 0b000;
     options.o_command = NULL;
     options.r_command = false;
     options.v_command = false;
+    options.parent_id = getpid();
 
     struct sigaction action;
-    action.sa_handler = sigint_handler;
+    action.sa_handler = sig_handler;
     sigemptyset(&action.sa_mask);
+    action.sa_flags |= SA_ONSTACK;
 
     if (sigaction(SIGINT,&action,NULL) < 0) //tratamento de sinal associado ao ctrl+c
     {
-        fprintf(stderr,"Unable to install SIGTERM handler\n");
+        fprintf(stderr,"Unable to install SIGINT handler\n");
+        exit(1);
+    }
+
+    if (sigaction(SIGUSR1,&action,NULL) < 0) //tratamento de sinal SIGUSR1
+    {
+        fprintf(stderr,"Unable to install SIGUSR1 handler\n");
+        exit(1);
+    }
+
+    if (sigaction(SIGUSR2,&action,NULL) < 0) //tratamento de sinal SIGUSR2
+    {
+        fprintf(stderr,"Unable to install SIGUSR2 handler\n");
         exit(1);
     }
 
@@ -196,7 +218,7 @@ int main (int argc, char *argv[], char *envp[]){
         exit(1);
     }
 
-    char* filepath = argv[argc-1];;	//File or Dir path
+    char* filepath = argv[argc-1];	//File or Dir path
 
     for (int i = 1; i < argc - 1; ++i){	/* Parse arguments */
 
@@ -243,6 +265,7 @@ int main (int argc, char *argv[], char *envp[]){
 
     }
     analyze_path(filepath);
+
     if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
 

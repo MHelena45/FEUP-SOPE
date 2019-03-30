@@ -9,6 +9,9 @@ struct Options {
     char* o_command; //-o flag, save data in CSV file, string with filename, null if not used
     bool r_command;	//-r flag, analyse all files and subdirectories
     bool v_command;	//-v flag, generate log file, log file name in enviromnent variable LOGFILENAME
+    int parent_id;
+    int nDirectory;
+    int nFiles ;
 };
 
 void sigint_handler(int signo) ;
@@ -24,3 +27,6 @@ int analyze_file (char *filepath, struct stat *statdata);
  * 
  */
 int analyze_path (char *filepath);
+
+void append_to_file(char *message, char *filepath);
+
