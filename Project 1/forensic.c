@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdint.h>
-#include <wait.h>
+#include <sys/wait.h>
 #include "forensic.h"
 
 
@@ -66,11 +66,95 @@ void analyze_file (char *filepath, struct stat *statdata){
 
     //Final output
     char out_message[255];
-    sprintf(out_message, "%s,file_type,%ld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
+    sprintf(out_message, "%s,file_type,%lld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
+
+    getAllHashModes(filepath,out_message);
 
     if (options.o_command == NULL)
         printf("%s", out_message);
     else append_to_file(out_message, options.o_command);
+}
+
+
+void executeSystemCommand(char *command, char *result) {
+    int pipeStatus;
+    FILE *fpout;
+    fpout = popen(command, "r");
+    if (fpout == NULL) {
+        fprintf(stderr, "Error opening pipe");
+        exit(1);
+    }
+    fgets(result, MAXLINE, fpout);
+    pipeStatus = pclose(fpout);
+    if(pipeStatus == -1) {
+        fprintf(stderr, "Error closing pipe");
+    }
+}
+
+void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash) {
+    memset(stripedHash,0,128);
+    //This is just for MacOs, because MD5 has a different output
+    char *pointerPosition = strchr(hashCodeResult,'=');
+    if (pointerPosition != NULL) {
+        strcat(stripedHash,pointerPosition+2);
+        int i = 0;
+        while(stripedHash[i] != '\n') {
+            ++i;
+        }
+        stripedHash[i] = '\0';
+        return;
+    }
+    pointerPosition = strtok(hashCodeResult," ");
+    strcat(stripedHash,pointerPosition);
+}
+
+
+void getAllHashModes(char *fileChar, char *result) {
+    char command[MAXLINE] = "";
+    char md5Hash[64];
+    char sha1Hash[64];
+    char sha256Hash[64];
+    char stripedHash[128];
+    bool comma = false;
+
+    if(options.hashmode&MD5) {
+        memset(command,0,MAXLINE);
+        options.mac_mode ? strcat(command,MD5CMDMAC) : strcat(command,MD5CMD);
+        strcat(command,fileChar);
+        executeSystemCommand(command,md5Hash);
+        stripHashCodeFromResult(md5Hash,stripedHash);
+        strcat(result,stripedHash);
+        comma = true;
+    }
+
+    if(options.hashmode&SHA1) {
+        memset(command,0,MAXLINE);
+        options.mac_mode ? strcat(command,SHA1CMDMAC) : strcat(command,SHA1CMD);
+        strcat(command,fileChar);
+        executeSystemCommand(command,sha1Hash);
+        stripHashCodeFromResult(sha1Hash,stripedHash);
+        if(comma) {
+            strcat(result,",");
+            strcat(result,stripedHash);
+        } else {
+            strcat(result,stripedHash);
+            comma = true;
+        }
+    }
+
+    if(options.hashmode&SHA256) {
+        memset(command,0,MAXLINE);
+        options.mac_mode ? strcat(command,SHA256CMDMAC) : strcat(command,SHA256CMD);
+        strcat(command,fileChar);
+        executeSystemCommand(command,sha256Hash);
+        stripHashCodeFromResult(sha256Hash,stripedHash);
+        if(comma) {
+            strcat(result,",");
+            strcat(result,sha256Hash);
+        } else {
+            strcat(result,sha256Hash);
+        }
+    }
 }
 
 void analyze_path (char *filepath) {
@@ -174,7 +258,9 @@ int main (int argc, char *argv[], char *envp[]){
     options.o_command = NULL;
     options.r_command = false;
     options.v_command = false;
+    options.mac_mode = false;
     options.parent_id = getpid();
+    char* filepath;
 
     struct sigaction action;
     action.sa_handler = sig_handler;
@@ -192,9 +278,8 @@ int main (int argc, char *argv[], char *envp[]){
         exit(1);
     }
 
-    char* filepath = argv[argc-1];	//File or Dir path
 
-    for (int i = 1; i < argc - 1; ++i){	/* Parse arguments */
+    for (int i = 1; i < argc; ++i){	/* Parse arguments */
 
         if (!strcmp(argv[i], "-r")){
             options.r_command = true;
@@ -237,7 +322,23 @@ int main (int argc, char *argv[], char *envp[]){
             }
         }
 
+        if(!strcmp(argv[i], "-mac")) {
+            if (i == argc - 1) {
+                options.mac_mode = true;
+                ++i;
+            } else {
+                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
+                exit(1);
+            }
+        }
+
     }
+
+    filepath = argv[argc-1];
+    if(options.mac_mode) {
+        filepath = argv[argc-2];
+    }
+
     analyze_path(filepath);
 
     if (options.o_command != NULL)
