@@ -18,7 +18,7 @@ void sig_handler(int signo) //handler do sinal
 {
     static int nDirectory = 0;
     static int nFiles = 0;
-    
+
     switch(signo){
         case SIGUSR1:{
             nDirectory++;
@@ -37,51 +37,43 @@ void sig_handler(int signo) //handler do sinal
     }
 }
 
-int analyze_file (char *filepath, struct stat *statdata){
+void analyze_file (char *filepath, struct stat *statdata){
 
     /*
         TODO:
             -chamar comando file, para obter file type
             -Formatar informaçao st_mode, (owner, group, others?)
             -Calcular md5, sha1, sha256 quando necessario
-            -printf da informaçao ou gravar em ficheiro quando o_commmand diferente de null
             - For MACOS some differences in calling hash functions
                 - md5sum -> md5 in MACOS
                 - sha1sum -> shasum -a 1 in MACOS
                 - sha256sum -> shasum -a 256 in MACOS
     */
 
+    kill(options.parent_id, SIGUSR2);
 
-    /*int killstatus = kill(options.parent_id, SIGUSR2);
-    while (killstatus)
-        killstatus = kill(options.parent_id, SIGUSR2);*/
+    struct tm tst;
 
     //Modification Time
-    struct tm mt;
-    char *mod_time = (char*) malloc (19);
-    localtime_r(&statdata->st_mtime, &mt);
-    sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + mt.tm_year, mt.tm_mon, mt.tm_mday, mt.tm_hour, mt.tm_min, mt.tm_sec);
+    char mod_time[19];
+    localtime_r(&statdata->st_mtime, &tst);
+    sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
 
     //Access Time
-    struct tm ct;
-    char *acc_time = (char*) malloc (19);
-    localtime_r(&statdata->st_ctime, &ct);
-    sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + ct.tm_year, ct.tm_mon, ct.tm_mday, ct.tm_hour, ct.tm_min, ct.tm_sec);
+    char acc_time[19];
+    localtime_r(&statdata->st_ctime, &tst);
+    sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
 
+    //Final output
     char out_message[255];
     sprintf(out_message, "%s,file_type,%ld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
 
     if (options.o_command == NULL)
         printf("%s", out_message);
     else append_to_file(out_message, options.o_command);
-
-    free(mod_time);
-    free(acc_time);
-
-    return 0;
 }
 
-int analyze_path (char *filepath) {
+void analyze_path (char *filepath) {
 
     struct stat statdata;
 
@@ -92,9 +84,7 @@ int analyze_path (char *filepath) {
 
     if (S_ISDIR(statdata.st_mode)){ //Directory
 
-        /*int killstatus = kill(options.parent_id, SIGUSR1);
-        while (killstatus)
-            killstatus = kill(options.parent_id, SIGUSR1);*/
+        kill(options.parent_id, SIGUSR1);
 
         DIR *c_dir;
         struct dirent *dir;
@@ -114,7 +104,8 @@ int analyze_path (char *filepath) {
                 perror("Error");
                 exit(1);
             }
-            //Check if file
+
+            //Check if regular file
             if (S_ISREG(temp_stat.st_mode))
                 analyze_file(temp_filename, &temp_stat);
         }
@@ -141,17 +132,12 @@ int analyze_path (char *filepath) {
                     analyze_path(temp_filename);
                     exit(0);
                 }
-
             }
         }
-
     }
     else { //Single file
         analyze_file(filepath, &statdata);
     }
-
-
-    return 0;
 }
 
 bool checkHashMode(char *hashMode) {
@@ -193,23 +179,11 @@ int main (int argc, char *argv[], char *envp[]){
     struct sigaction action;
     action.sa_handler = sig_handler;
     sigemptyset(&action.sa_mask);
-    action.sa_flags |= SA_ONSTACK;
+    action.sa_flags = 0;
 
-    if (sigaction(SIGINT,&action,NULL) < 0) //tratamento de sinal associado ao ctrl+c
-    {
-        fprintf(stderr,"Unable to install SIGINT handler\n");
-        exit(1);
-    }
-
-    if (sigaction(SIGUSR1,&action,NULL) < 0) //tratamento de sinal SIGUSR1
-    {
-        fprintf(stderr,"Unable to install SIGUSR1 handler\n");
-        exit(1);
-    }
-
-    if (sigaction(SIGUSR2,&action,NULL) < 0) //tratamento de sinal SIGUSR2
-    {
-        fprintf(stderr,"Unable to install SIGUSR2 handler\n");
+    //tratamento de sinais
+    if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
+        fprintf(stderr,"Unable to install signal handler\n");
         exit(1);
     }
 
