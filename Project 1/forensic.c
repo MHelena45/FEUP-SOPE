@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <sys/wait.h>
 #include "forensic.h"
-
+#include "forensic_aux.h"
 
 struct Options options;
 
@@ -37,18 +37,45 @@ void sig_handler(int signo) //handler do sinal
     }
 }
 
-void analyze_file (char *filepath, struct stat *statdata){
+void getAllHashModes(char *fileChar, char *result) {
+    char command[MAXLINE] = "";
+    char md5Hash[64];
+    char sha1Hash[64];
+    char sha256Hash[64];
+    char stripedHash[128];
 
-    /*
-        TODO:
-            -chamar comando file, para obter file type
-            -Formatar informaçao st_mode, (owner, group, others?)
-            -Calcular md5, sha1, sha256 quando necessario
-            - For MACOS some differences in calling hash functions
-                - md5sum -> md5 in MACOS
-                - sha1sum -> shasum -a 1 in MACOS
-                - sha256sum -> shasum -a 256 in MACOS
-    */
+    if(options.hashmode & MD5) {
+        memset(command,0,MAXLINE);
+        options.mac_mode ? strcat(command,MD5CMDMAC) : strcat(command,MD5CMD);
+        strcat(command,fileChar);
+        executeSystemCommand(command,md5Hash);
+        stripHashCodeFromResult(md5Hash,stripedHash);
+        strcat(result,",");
+        strcat(result,stripedHash);
+    }
+
+    if(options.hashmode & SHA1) {
+        memset(command,0,MAXLINE);
+        options.mac_mode ? strcat(command,SHA1CMDMAC) : strcat(command,SHA1CMD);
+        strcat(command,fileChar);
+        executeSystemCommand(command,sha1Hash);
+        stripHashCodeFromResult(sha1Hash,stripedHash);
+        strcat(result,",");
+        strcat(result,stripedHash);
+    }
+
+    if(options.hashmode & SHA256) {
+        memset(command,0,MAXLINE);
+        options.mac_mode ? strcat(command,SHA256CMDMAC) : strcat(command,SHA256CMD);
+        strcat(command,fileChar);
+        executeSystemCommand(command,sha256Hash);
+        stripHashCodeFromResult(sha256Hash,stripedHash);
+        strcat(result,",");
+        strcat(result,sha256Hash);
+    }
+}
+
+void analyze_file (char *filepath, struct stat *statdata){
 
     kill(options.parent_id, SIGUSR2);
 
@@ -65,96 +92,16 @@ void analyze_file (char *filepath, struct stat *statdata){
     sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
 
     //Final output
-    char out_message[255];
-    sprintf(out_message, "%s,file_type,%lld,file access (parse st_mode),%s,%s\n", filepath, statdata->st_size, acc_time, mod_time);
+    char out_message[512];
+    sprintf(out_message, "%s,file_type,%ld,file access (parse st_mode),%s,%s", filepath, statdata->st_size, acc_time, mod_time);
 
     getAllHashModes(filepath,out_message);
+
+    strcat(out_message,"\n");
 
     if (options.o_command == NULL)
         printf("%s", out_message);
     else append_to_file(out_message, options.o_command);
-}
-
-
-void executeSystemCommand(char *command, char *result) {
-    int pipeStatus;
-    FILE *fpout;
-    fpout = popen(command, "r");
-    if (fpout == NULL) {
-        fprintf(stderr, "Error opening pipe");
-        exit(1);
-    }
-    fgets(result, MAXLINE, fpout);
-    pipeStatus = pclose(fpout);
-    if(pipeStatus == -1) {
-        fprintf(stderr, "Error closing pipe");
-    }
-}
-
-void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash) {
-    memset(stripedHash,0,128);
-    //This is just for MacOs, because MD5 has a different output
-    char *pointerPosition = strchr(hashCodeResult,'=');
-    if (pointerPosition != NULL) {
-        strcat(stripedHash,pointerPosition+2);
-        int i = 0;
-        while(stripedHash[i] != '\n') {
-            ++i;
-        }
-        stripedHash[i] = '\0';
-        return;
-    }
-    pointerPosition = strtok(hashCodeResult," ");
-    strcat(stripedHash,pointerPosition);
-}
-
-
-void getAllHashModes(char *fileChar, char *result) {
-    char command[MAXLINE] = "";
-    char md5Hash[64];
-    char sha1Hash[64];
-    char sha256Hash[64];
-    char stripedHash[128];
-    bool comma = false;
-
-    if(options.hashmode&MD5) {
-        memset(command,0,MAXLINE);
-        options.mac_mode ? strcat(command,MD5CMDMAC) : strcat(command,MD5CMD);
-        strcat(command,fileChar);
-        executeSystemCommand(command,md5Hash);
-        stripHashCodeFromResult(md5Hash,stripedHash);
-        strcat(result,stripedHash);
-        comma = true;
-    }
-
-    if(options.hashmode&SHA1) {
-        memset(command,0,MAXLINE);
-        options.mac_mode ? strcat(command,SHA1CMDMAC) : strcat(command,SHA1CMD);
-        strcat(command,fileChar);
-        executeSystemCommand(command,sha1Hash);
-        stripHashCodeFromResult(sha1Hash,stripedHash);
-        if(comma) {
-            strcat(result,",");
-            strcat(result,stripedHash);
-        } else {
-            strcat(result,stripedHash);
-            comma = true;
-        }
-    }
-
-    if(options.hashmode&SHA256) {
-        memset(command,0,MAXLINE);
-        options.mac_mode ? strcat(command,SHA256CMDMAC) : strcat(command,SHA256CMD);
-        strcat(command,fileChar);
-        executeSystemCommand(command,sha256Hash);
-        stripHashCodeFromResult(sha256Hash,stripedHash);
-        if(comma) {
-            strcat(result,",");
-            strcat(result,sha256Hash);
-        } else {
-            strcat(result,sha256Hash);
-        }
-    }
 }
 
 void analyze_path (char *filepath) {
@@ -224,33 +171,6 @@ void analyze_path (char *filepath) {
     }
 }
 
-bool checkHashMode(char *hashMode) {
-    if (!strcmp(hashMode,"md5")) {
-        options.hashmode |= MD5;
-        return true;
-    }
-
-    if (!strcmp(hashMode,"sha1")) {
-        options.hashmode |= SHA1;
-        return true;
-    }
-
-    if (!strcmp(hashMode,"sha256")) {
-        options.hashmode |= SHA256;
-        return true;
-    }
-
-    return false;
-}
-
-void append_to_file(char *message, char *filepath){
-    FILE *out_file;
-    out_file = fopen (filepath, "a");
-    if (out_file != NULL){
-        fputs(message, out_file);
-        fclose(out_file);
-    }
-}
 
 int main (int argc, char *argv[], char *envp[]){
 
@@ -267,7 +187,7 @@ int main (int argc, char *argv[], char *envp[]){
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
 
-    //tratamento de sinais
+    //Signal Handler installer
     if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
         fprintf(stderr,"Unable to install signal handler\n");
         exit(1);
@@ -277,7 +197,6 @@ int main (int argc, char *argv[], char *envp[]){
         printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
         exit(1);
     }
-
 
     for (int i = 1; i < argc; ++i){	/* Parse arguments */
 
@@ -290,7 +209,7 @@ int main (int argc, char *argv[], char *envp[]){
             if (i < argc - 2) {
                 char *ptr = strtok(argv[i + 1], ",");
                 while (ptr != NULL) {
-                    if (!checkHashMode(ptr)) {
+                    if (!checkHashMode(ptr, &options.hashmode)) {
                         printf("Invalid parameter for hash function: [md5,sha1,sha256]\n");
                         exit(1);
                     }
@@ -331,13 +250,11 @@ int main (int argc, char *argv[], char *envp[]){
                 exit(1);
             }
         }
-
     }
 
-    filepath = argv[argc-1];
-    if(options.mac_mode) {
+    if(options.mac_mode)
         filepath = argv[argc-2];
-    }
+    else filepath = argv[argc-1];
 
     analyze_path(filepath);
 

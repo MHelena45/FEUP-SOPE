@@ -1,9 +1,5 @@
 #include <signal.h>
-
-#define MAXLINE 512
-#define MD5 0b001
-#define SHA1 0b010
-#define SHA256 0b100
+#include "forensic_aux.h"
 
 #define MD5CMD "md5sum "
 #define SHA1CMD "sha1sum "
@@ -23,24 +19,20 @@ struct Options {
 
 void sig_handler(int signo) ;
 
-void executeSystemCommand(char *command, char *result);
-
-void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash);
 
 void getAllHashModes(char *fileChar, char *result);
 
-bool checkHashMode(char *hashMode);
+
 /**
- * 
+ *
  */
 void analyze_file (char *filepath, struct stat *statdata);
 
 /**
- * 
- * 
- * 
+ *
+ *
+ *
  */
 void analyze_path (char *filepath);
 
-void append_to_file(char *message, char *filepath);
 
