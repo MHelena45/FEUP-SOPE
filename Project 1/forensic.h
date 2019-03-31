@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <time.h>
 #include "forensic_aux.h"
 
 #define MD5CMD "md5sum "
@@ -15,6 +16,8 @@ struct Options {
     bool v_command;	//-v flag, generate log file, log file name in enviromnent variable LOGFILENAME
     bool mac_mode;
     int parent_id;
+    char log_filepath[255] ;
+    clock_t start_time;
 };
 
 void sig_handler(int signo) ;
@@ -35,4 +38,4 @@ void analyze_file (char *filepath, struct stat *statdata);
  */
 void analyze_path (char *filepath);
 
-
+void log_command(char *command);

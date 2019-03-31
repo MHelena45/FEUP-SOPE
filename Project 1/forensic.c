@@ -22,6 +22,12 @@ void sig_handler(int signo) //handler do sinal
     switch(signo){
         case SIGUSR1:{
             nDirectory++;
+            //Log analized files
+            if (options.v_command) {
+                char log_msg[255] = "SIGNAL ";
+                strcat(log_msg, "SIGUSR1");
+                log_command(log_msg);
+            }
             if (options.o_command != NULL) {
                 char mess[100];
                 sprintf(mess, "New directory: %i/ %i directories/files at this time.\n", nDirectory, nFiles);
@@ -31,10 +37,32 @@ void sig_handler(int signo) //handler do sinal
         }
         case SIGUSR2: {
             nFiles++;
+            if (options.v_command) {
+                char log_msg[255] = "SIGNAL ";
+                strcat(log_msg, "SIGUSR2");
+                log_command(log_msg);
+            }
             break;
         }
-        case SIGINT: exit(0);
+        case SIGINT: {
+            if (options.v_command) {
+                char log_msg[255] = "SIGNAL ";
+                strcat(log_msg, "SIGUSR1");
+                log_command(log_msg);
+            }
+            exit(0);
+        }
     }
+}
+
+void log_command(char *command){
+
+    float inst = (double)(clock() - options.start_time)/ CLOCKS_PER_SEC;
+    char log_out[512];
+
+    sprintf(log_out, "inst:%f - pid: %d - act: %s\n", inst, getpid(), command);
+    append_to_file(log_out, options.log_filepath);
+
 }
 
 void getAllHashModes(char *fileChar, char *result) {
@@ -84,6 +112,13 @@ void getAllHashModes(char *fileChar, char *result) {
 void analyze_file (char *filepath, struct stat *statdata){
 
     kill(options.parent_id, SIGUSR2);
+
+    //Log analized files
+    if (options.v_command) {
+        char log_msg[255] = "ANALIZED ";
+        strcat(log_msg, filepath);
+        log_command(log_msg);
+    }
 
     //File Name and Type
     char cmd[260] = "file \"";
@@ -213,15 +248,27 @@ int main (int argc, char *argv[], char *envp[]){
     options.v_command = false;
     options.mac_mode = false;
     options.parent_id = getpid();
-    char* filepath;
 
+    strcat(options.log_filepath, "log.txt");//Temporary
+    remove(options.log_filepath);//remover se um log anterior existir
+
+    char* filepath;
     struct sigaction action;
     action.sa_handler = sig_handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
-    
-    clock_t start_t, end_t, total_t;  /**/
-    start_t = clock();
+
+    options.start_time = clock();
+
+    //Log initial command
+    if (options.v_command) {
+        char log_msg[255] = "COMMAND ";
+        for (int i = 0; i < argc; ++i) {
+            strcat(log_msg, argv[i]);
+            strcat(log_msg, " ");
+        }
+        log_command(log_msg);
+    }
 
     //Signal Handler installer
     if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
@@ -295,20 +342,5 @@ int main (int argc, char *argv[], char *envp[]){
     if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
 
-     end_t = clock();
-    total_t = (double)(end_t - start_t)/ CLOCKS_PER_SEC;
-    FILE * fd;
-    fd = fopen ( "log.txt", "a");
-    char buf[1000];
-    strcpy(buf, total_t);
-    strcat(buf,",");
-    strcat(buf, options.parent_id );
-    strcat(buf,",");
-    for(i = 1; i <argc; i++){
-        strcat(buf, argv[i]);
-        strct(buf," ")
-    }
-    write(&fd, buf, 100);
-    fclose(fp);
     exit(0);
 }

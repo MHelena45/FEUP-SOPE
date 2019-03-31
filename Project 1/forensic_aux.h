@@ -13,3 +13,5 @@ bool checkHashMode(char *hashMode, uint8_t *hash_option);
 
 void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash);
 
+
+
