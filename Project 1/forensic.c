@@ -59,7 +59,7 @@ void log_command(char *command){
     struct timeval time_now;
     gettimeofday(&time_now, NULL);
 
-    float inst = (time_now.tv_usec - options.start_time.tv_usec) / 1000;
+    double inst = (time_now.tv_usec - options.start_time.tv_usec) / 1000;
     char log_out[512];
 
     sprintf(log_out, "inst:%0.02f - pid: %d - act: %s\n", inst, getpid(), command);
@@ -242,7 +242,7 @@ void analyze_path (char *filepath) {
 }
 
 
-int main (int argc, char *argv[], char *envp[]){
+int main (int argc, char *argv[]){
 
     options.hashmode = 0b000;
     options.o_command = NULL;
@@ -251,8 +251,12 @@ int main (int argc, char *argv[], char *envp[]){
     options.mac_mode = false;
     options.parent_id = getpid();
 
-    strcat(options.log_filepath, "log.txt");//Temporary
-    remove(options.log_filepath);//remover se um log anterior existir
+    if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
+        putenv("LOGFILENAME=log.txt");
+        options.log_filepath = getenv("LOGFILENAME");
+    }
+
+    remove(options.log_filepath);
 
     char* filepath;
     struct sigaction action;

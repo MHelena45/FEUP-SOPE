@@ -16,7 +16,7 @@ struct Options {
     bool v_command;	//-v flag, generate log file, log file name in enviromnent variable LOGFILENAME
     bool mac_mode;
     int parent_id;
-    char log_filepath[255] ;
+    char *log_filepath;
     struct timeval start_time;
 };
 
