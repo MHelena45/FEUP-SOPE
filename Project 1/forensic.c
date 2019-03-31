@@ -219,6 +219,9 @@ int main (int argc, char *argv[], char *envp[]){
     action.sa_handler = sig_handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
+    
+    clock_t start_t, end_t, total_t;  /**/
+    start_t = clock();
 
     //Signal Handler installer
     if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
@@ -292,5 +295,15 @@ int main (int argc, char *argv[], char *envp[]){
     if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
 
+     end_t = clock();
+    total_t = (double)(end_t - start_t)/ CLOCKS_PER_SEC;
+    FILE * fd;
+    fopen ( "log.txt", "a");
+    char buf[1000];
+    strcpy(buf, total_t);
+    strcat(buf,",");
+    strcat(buf, options.parent_id );
+    
+    write(&fd, buf, 100);
     exit(0);
 }
