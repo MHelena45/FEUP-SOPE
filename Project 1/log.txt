@@ -1,34 +1,34 @@
-inst:0.000032 - pid: 5473 - act: SIGNAL SIGUSR1
-inst:0.000397 - pid: 5473 - act: SIGNAL SIGUSR2
-inst:0.000458 - pid: 5473 - act: ANALIZED test/graphics.c
-inst:0.000772 - pid: 5473 - act: SIGNAL SIGUSR2
-inst:0.000793 - pid: 5473 - act: ANALIZED test/forensic.c
-inst:0.000954 - pid: 5473 - act: SIGNAL SIGUSR2
-inst:0.000977 - pid: 5473 - act: ANALIZED test/graphics.h
-inst:0.001117 - pid: 5473 - act: SIGNAL SIGUSR2
-inst:0.001137 - pid: 5473 - act: ANALIZED test/hello.txt
-inst:-0.001089 - pid: 5482 - act: ANALIZED test/Pictures/Screenshot from 2018-11-27 14-23-16.png
-inst:0.001399 - pid: 5473 - act: SIGNAL SIGUSR2
-inst:0.001425 - pid: 5473 - act: SIGNAL SIGUSR1
-inst:-0.001093 - pid: 5484 - act: ANALIZED test/lab2/lab2.o
-inst:0.001519 - pid: 5473 - act: SIGNAL SIGUSR2
-inst:0.001547 - pid: 5473 - act: SIGNAL SIGUSR1
-inst:-0.000902 - pid: 5482 - act: ANALIZED test/Pictures/Screenshot from 2018-12-13 13-42-22.png
-inst:-0.000941 - pid: 5484 - act: ANALIZED test/lab2/timer.o
-inst:-0.000778 - pid: 5484 - act: ANALIZED test/lab2/trace.txt
-inst:-0.000758 - pid: 5482 - act: ANALIZED test/Pictures/vvOF5qn.jpg
-inst:-0.000595 - pid: 5482 - act: ANALIZED test/Pictures/safe_image.jpeg
-inst:-0.000399 - pid: 5482 - act: ANALIZED test/Pictures/Screenshot from 2019-03-18 15-14-35.png
-inst:-0.000636 - pid: 5484 - act: ANALIZED test/lab2/.clang-format
-inst:-0.000245 - pid: 5482 - act: ANALIZED test/Pictures/Screenshot from 2018-11-27 14-23-42.png
-inst:-0.000126 - pid: 5482 - act: ANALIZED test/Pictures/Screenshot from 2019-03-26 17-39-52.png
-inst:0.000008 - pid: 5482 - act: ANALIZED test/Pictures/Screenshot from 2018-12-13 13-42-20.png
-inst:-0.000528 - pid: 5484 - act: ANALIZED test/lab2/output.txt
-inst:-0.001098 - pid: 5509 - act: ANALIZED test/Pictures/Wallpapers/vvOF5qn.jpg
-inst:-0.000354 - pid: 5484 - act: ANALIZED test/lab2/lab2
-inst:-0.000169 - pid: 5484 - act: ANALIZED test/lab2/lab2.c
-inst:0.000017 - pid: 5484 - act: ANALIZED test/lab2/timer.c
-inst:0.000243 - pid: 5484 - act: ANALIZED test/lab2/Makefile
-inst:0.000423 - pid: 5484 - act: ANALIZED test/lab2/.gdbinit
-inst:0.000587 - pid: 5484 - act: ANALIZED test/lab2/i8254.h
-inst:-0.001117 - pid: 5525 - act: ANALIZED test/lab2/conf/lab2
+inst:0.00 - pid: 6942 - act: SIGNAL SIGUSR1
+inst:0.00 - pid: 6942 - act: SIGNAL SIGUSR2
+inst:0.00 - pid: 6942 - act: ANALIZED test/graphics.c
+inst:12.00 - pid: 6942 - act: SIGNAL SIGUSR2
+inst:12.00 - pid: 6942 - act: ANALIZED test/forensic.c
+inst:26.00 - pid: 6942 - act: SIGNAL SIGUSR2
+inst:26.00 - pid: 6942 - act: ANALIZED test/graphics.h
+inst:33.00 - pid: 6942 - act: SIGNAL SIGUSR2
+inst:34.00 - pid: 6942 - act: ANALIZED test/hello.txt
+inst:50.00 - pid: 6942 - act: SIGNAL SIGUSR2
+inst:50.00 - pid: 6951 - act: ANALIZED test/Pictures/Screenshot from 2018-11-27 14-23-16.png
+inst:50.00 - pid: 6942 - act: SIGNAL SIGUSR1
+inst:50.00 - pid: 6942 - act: SIGNAL SIGUSR1
+inst:50.00 - pid: 6942 - act: SIGNAL SIGUSR2
+inst:50.00 - pid: 6953 - act: ANALIZED test/lab2/lab2.o
+inst:53.00 - pid: 6953 - act: ANALIZED test/lab2/timer.o
+inst:53.00 - pid: 6951 - act: ANALIZED test/Pictures/Screenshot from 2018-12-13 13-42-22.png
+inst:56.00 - pid: 6953 - act: ANALIZED test/lab2/trace.txt
+inst:57.00 - pid: 6951 - act: ANALIZED test/Pictures/vvOF5qn.jpg
+inst:61.00 - pid: 6951 - act: ANALIZED test/Pictures/safe_image.jpeg
+inst:63.00 - pid: 6951 - act: ANALIZED test/Pictures/Screenshot from 2019-03-18 15-14-35.png
+inst:65.00 - pid: 6953 - act: ANALIZED test/lab2/.clang-format
+inst:66.00 - pid: 6951 - act: ANALIZED test/Pictures/Screenshot from 2018-11-27 14-23-42.png
+inst:68.00 - pid: 6951 - act: ANALIZED test/Pictures/Screenshot from 2019-03-26 17-39-52.png
+inst:70.00 - pid: 6951 - act: ANALIZED test/Pictures/Screenshot from 2018-12-13 13-42-20.png
+inst:73.00 - pid: 6977 - act: ANALIZED test/Pictures/Wallpapers/vvOF5qn.jpg
+inst:74.00 - pid: 6953 - act: ANALIZED test/lab2/output.txt
+inst:80.00 - pid: 6953 - act: ANALIZED test/lab2/lab2
+inst:83.00 - pid: 6953 - act: ANALIZED test/lab2/lab2.c
+inst:87.00 - pid: 6953 - act: ANALIZED test/lab2/timer.c
+inst:90.00 - pid: 6953 - act: ANALIZED test/lab2/Makefile
+inst:94.00 - pid: 6953 - act: ANALIZED test/lab2/.gdbinit
+inst:95.00 - pid: 6953 - act: ANALIZED test/lab2/i8254.h
+inst:98.00 - pid: 6994 - act: ANALIZED test/lab2/conf/lab2

@@ -17,7 +17,7 @@ struct Options {
     bool mac_mode;
     int parent_id;
     char log_filepath[255] ;
-    clock_t start_time;
+    struct timeval start_time;
 };
 
 void sig_handler(int signo) ;

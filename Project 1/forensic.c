@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <time.h>
+#include <sys/time.h>
 #include <stdint.h>
 #include <sys/wait.h>
 #include "forensic.h"
@@ -56,11 +56,13 @@ void sig_handler(int signo) //handler do sinal
 }
 
 void log_command(char *command){
+    struct timeval time_now;
+    gettimeofday(&time_now, NULL);
 
-    float inst = (double)(clock() - options.start_time)/ CLOCKS_PER_SEC;
+    float inst = (time_now.tv_usec - options.start_time.tv_usec) / 1000;
     char log_out[512];
 
-    sprintf(log_out, "inst:%f - pid: %d - act: %s\n", inst, getpid(), command);
+    sprintf(log_out, "inst:%0.02f - pid: %d - act: %s\n", inst, getpid(), command);
     append_to_file(log_out, options.log_filepath);
 
 }
@@ -258,7 +260,7 @@ int main (int argc, char *argv[], char *envp[]){
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
 
-    options.start_time = clock();
+    gettimeofday(&options.start_time, NULL);
 
     //Log initial command
     if (options.v_command) {
