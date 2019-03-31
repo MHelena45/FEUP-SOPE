@@ -64,3 +64,5 @@ void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash) {
     pointerPosition = strtok(hashCodeResult," ");
     strcat(stripedHash,pointerPosition);
 }
+
+

@@ -1,0 +1,28 @@
+New directory: 1/ 0 directories/files at this time.
+test/graphics.c,C source,1033,rw,2019-2-29T11:50:37,2018-11-13T15:7:15,0443407316c6463ae998e4c79dd5156a
+test/forensic.c,C source,3840,rw,2019-2-29T11:50:37,2019-2-26T16:6:14,b95b48d5673ffdef9ca48a38aabc0ac1
+test/graphics.h,C source,100,rw,2019-2-29T11:50:37,2018-11-13T14:1:53,a8996c24b0daa667db9cb881ed852d10
+test/hello.txt,ASCII text,4,rw,2019-2-29T11:50:37,2019-2-25T15:17:36,098f6bcd4621d373cade4e832627b4f6
+New directory: 2/ 5 directories/files at this time.
+New directory: 3/ 5 directories/files at this time.
+test/lab2/lab2.o,ELF 32-bit LSB relocatable,3468,rw,2019-2-29T11:50:37,2018-9-5T16:31:10,ef5cfa4aa91505234a996753a7bfa7d8
+test/Pictures/Screenshot from 2018-11-27 14-23-16.png,PNG image data,109568,rw,2019-2-30T14:42:9,2018-10-27T14:23:18,8931fcc2c20c92ee741dc1886ec9e607
+test/lab2/timer.o,ELF 32-bit LSB relocatable,3208,rw,2019-2-29T11:50:37,2018-9-5T16:31:10,20b554a54e6f3007b140cea1d031548a
+test/Pictures/Screenshot from 2018-12-13 13-42-22.png,PNG image data,410570,rw,2019-2-30T14:42:9,2018-11-13T13:42:22,eb3d5d739c325a233e684f7f06ba171e
+test/lab2/trace.txt,ASCII text,1223,rw,2019-2-29T11:50:37,2018-9-8T10:32:24,1497f10129463785974eb9dbf585372c
+test/Pictures/vvOF5qn.jpg,JPEG image data,448235,rwx,2019-2-30T14:42:9,2018-6-16T21:16:40,2150b6b5f85e5f4db4f63cb9bd53a570
+test/Pictures/safe_image.jpeg,JPEG image data,33287,rw,2019-2-30T14:42:9,2019-1-26T15:59:58,35ee51f0a4d5cb4290d0ed94afc50359
+test/lab2/.clang-format,ASCII text,2144,rw,2019-2-29T11:50:37,2018-8-17T16:1:30,d13517211fdb1dfbe35ce86065cf88e3
+test/Pictures/Screenshot from 2019-03-18 15-14-35.png,PNG image data,419620,rw,2019-2-30T14:42:9,2019-2-18T15:14:35,f29d99fd57557e6c7342e71ee9c690c5
+test/Pictures/Screenshot from 2018-11-27 14-23-42.png,PNG image data,4820,rw,2019-2-30T14:42:9,2018-10-27T14:23:50,f57aec5895bedb4b9790fad0cbf992fd
+test/lab2/output.txt,ASCII text,61,rw,2019-2-29T11:50:37,2018-9-8T10:32:24,f7cad8d722c80f5ca86b064d39eebbcb
+test/Pictures/Screenshot from 2019-03-26 17-39-52.png,PNG image data,577629,rw,2019-2-30T14:42:9,2019-2-26T17:39:52,6b573cc85797ab4dc0811054dec48c25
+test/Pictures/Screenshot from 2018-12-13 13-42-20.png,PNG image data,410570,rw,2019-2-30T14:42:9,2018-11-13T13:42:20,eb3d5d739c325a233e684f7f06ba171e
+test/lab2/lab2,ELF 32-bit LSB executable,1259376,rwx,2019-2-29T11:50:37,2018-9-5T16:31:10,63933ad6b60c987a3d0972da29a0f684
+test/Pictures/Wallpapers/vvOF5qn.jpg,JPEG image data,448235,rwx,2019-2-30T14:42:9,2018-6-16T21:16:40,2150b6b5f85e5f4db4f63cb9bd53a570
+test/lab2/lab2.c,C source,2033,rw,2019-2-29T11:50:37,2018-9-5T16:26:38,e97ac34f13a018eaa8fe7c3e84a4a687
+test/lab2/timer.c,C source,3278,rw,2019-2-29T11:50:37,2018-9-5T16:32:29,2f0d1aee7f8289df6180cf415ca95522
+test/lab2/Makefile,BSD makefile script text with ".include",118,rw,2019-2-29T11:50:37,2018-8-27T23:21:14,2b9b539927bca35cff3729f0183884bc
+test/lab2/.gdbinit,empty,0,rw,2019-2-29T11:50:37,2018-8-29T16:15:12,d41d8cd98f00b204e9800998ecf8427e
+test/lab2/i8254.h,C source,1833,rw,2019-2-29T11:50:37,2018-9-1T22:48:45,ae9fd2b75f07d35cc54fa206a6aa021b
+test/lab2/conf/lab2,ASCII text,963,rw,2019-2-29T11:50:37,2018-8-23T18:50:18,cc7bae4d0e6beae233ff23c776043b72

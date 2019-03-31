@@ -47,7 +47,9 @@ void getAllHashModes(char *fileChar, char *result) {
     if(options.hashmode & MD5) {
         memset(command,0,MAXLINE);
         options.mac_mode ? strcat(command,MD5CMDMAC) : strcat(command,MD5CMD);
+        strcat(command, "\"");
         strcat(command,fileChar);
+        strcat(command, "\"");
         executeSystemCommand(command,md5Hash);
         stripHashCodeFromResult(md5Hash,stripedHash);
         strcat(result,",");
@@ -57,7 +59,9 @@ void getAllHashModes(char *fileChar, char *result) {
     if(options.hashmode & SHA1) {
         memset(command,0,MAXLINE);
         options.mac_mode ? strcat(command,SHA1CMDMAC) : strcat(command,SHA1CMD);
+        strcat(command, "\"");
         strcat(command,fileChar);
+        strcat(command, "\"");
         executeSystemCommand(command,sha1Hash);
         stripHashCodeFromResult(sha1Hash,stripedHash);
         strcat(result,",");
@@ -67,7 +71,9 @@ void getAllHashModes(char *fileChar, char *result) {
     if(options.hashmode & SHA256) {
         memset(command,0,MAXLINE);
         options.mac_mode ? strcat(command,SHA256CMDMAC) : strcat(command,SHA256CMD);
+        strcat(command, "\"");
         strcat(command,fileChar);
+        strcat(command, "\"");
         executeSystemCommand(command,sha256Hash);
         stripHashCodeFromResult(sha256Hash,stripedHash);
         strcat(result,",");
@@ -79,7 +85,18 @@ void analyze_file (char *filepath, struct stat *statdata){
 
     kill(options.parent_id, SIGUSR2);
 
-    struct tm tst;
+    //File Name and Type
+    char cmd[260] = "file \"";
+    char file_result[260] = "";
+    bool comma = false;
+    strcat(cmd, filepath);
+    strcat(cmd, "\"");
+    executeSystemCommand(cmd, file_result);
+    if (strchr(file_result, ',') != NULL)
+        comma = true;
+    char *file_name = strtok(file_result, ":");
+    char *file_type = comma ? strtok(NULL, ",") : strtok(NULL, "\n");
+    ++file_type;
 
     //File Permissions
     char file_perm[4] = "";
@@ -93,6 +110,8 @@ void analyze_file (char *filepath, struct stat *statdata){
     if (statdata->st_mode & S_IXUSR)
         strcat(file_perm, "x");
 
+    struct tm tst;
+
     //Modification Time
     char mod_time[19];
     localtime_r(&statdata->st_mtime, &tst);
@@ -105,7 +124,7 @@ void analyze_file (char *filepath, struct stat *statdata){
 
     //Normal Output
     char out_message[1024];
-    sprintf(out_message, "%s,file_type,%ld,%s,%s,%s", filepath, statdata->st_size, file_perm, acc_time, mod_time);
+    sprintf(out_message, "%s,%s,%ld,%s,%s,%s", file_name, file_type,statdata->st_size, file_perm, acc_time, mod_time);
 
     //Add optional hashes
     getAllHashModes(filepath,out_message);
