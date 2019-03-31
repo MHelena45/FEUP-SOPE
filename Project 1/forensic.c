@@ -303,7 +303,11 @@ int main (int argc, char *argv[], char *envp[]){
     strcpy(buf, total_t);
     strcat(buf,",");
     strcat(buf, options.parent_id );
-    
+    strcat(buf,",");
+    for(i = 1; i <argc; i++){
+        strcat(buf, argv[i]);
+        strct(buf," ")
+    }
     write(&fd, buf, 100);
     fclose(fp);
     exit(0);
