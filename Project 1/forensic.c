@@ -251,12 +251,6 @@ int main (int argc, char *argv[]){
     options.mac_mode = false;
     options.parent_id = getpid();
 
-    if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
-        putenv("LOGFILENAME=log.txt");
-        options.log_filepath = getenv("LOGFILENAME");
-		remove(options.log_filepath);
-    }
-
     char* filepath;
     struct sigaction action;
     action.sa_handler = sig_handler;
@@ -264,16 +258,6 @@ int main (int argc, char *argv[]){
     action.sa_flags = 0;
 
     gettimeofday(&options.start_time, NULL);
-
-    //Log initial command
-    if (options.v_command) {
-        char log_msg[255] = "COMMAND ";
-        for (int i = 0; i < argc; ++i) {
-            strcat(log_msg, argv[i]);
-            strcat(log_msg, " ");
-        }
-        log_command(log_msg);
-    }
 
     //Signal Handler installer
     if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
@@ -338,6 +322,23 @@ int main (int argc, char *argv[]){
                 exit(1);
             }
         }
+    }
+	if (options.v_command){
+		if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
+			putenv("LOGFILENAME=log.txt");
+			options.log_filepath = getenv("LOGFILENAME");
+			remove(options.log_filepath);
+		}
+	}
+
+    //Log initial command
+    if (options.v_command) {
+        char log_msg[255] = "COMMAND ";
+        for (int i = 0; i < argc; ++i) {
+            strcat(log_msg, argv[i]);
+            strcat(log_msg, " ");
+        }
+        log_command(log_msg);
     }
 
     filepath = options.mac_mode ? argv[argc-2] : argv[argc-1];
