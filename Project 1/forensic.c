@@ -254,9 +254,8 @@ int main (int argc, char *argv[]){
     if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
         putenv("LOGFILENAME=log.txt");
         options.log_filepath = getenv("LOGFILENAME");
+		remove(options.log_filepath);
     }
-
-    remove(options.log_filepath);
 
     char* filepath;
     struct sigaction action;
