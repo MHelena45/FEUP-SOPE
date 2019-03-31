@@ -298,12 +298,13 @@ int main (int argc, char *argv[], char *envp[]){
      end_t = clock();
     total_t = (double)(end_t - start_t)/ CLOCKS_PER_SEC;
     FILE * fd;
-    fopen ( "log.txt", "a");
+    fd = fopen ( "log.txt", "a");
     char buf[1000];
     strcpy(buf, total_t);
     strcat(buf,",");
     strcat(buf, options.parent_id );
     
     write(&fd, buf, 100);
+    fclose(fp);
     exit(0);
 }
