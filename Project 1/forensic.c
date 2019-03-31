@@ -81,6 +81,18 @@ void analyze_file (char *filepath, struct stat *statdata){
 
     struct tm tst;
 
+    //File Permissions
+    char file_perm[4] = "";
+
+    if (statdata->st_mode & S_IRUSR)
+        strcat(file_perm, "r");
+
+    if (statdata->st_mode & S_IWUSR)
+        strcat(file_perm, "w");
+
+    if (statdata->st_mode & S_IXUSR)
+        strcat(file_perm, "x");
+
     //Modification Time
     char mod_time[19];
     localtime_r(&statdata->st_mtime, &tst);
@@ -91,12 +103,14 @@ void analyze_file (char *filepath, struct stat *statdata){
     localtime_r(&statdata->st_ctime, &tst);
     sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
 
-    //Final output
-    char out_message[512];
-    sprintf(out_message, "%s,file_type,%ld,file access (parse st_mode),%s,%s", filepath, statdata->st_size, acc_time, mod_time);
+    //Normal Output
+    char out_message[1024];
+    sprintf(out_message, "%s,file_type,%ld,%s,%s,%s", filepath, statdata->st_size, file_perm, acc_time, mod_time);
 
+    //Add optional hashes
     getAllHashModes(filepath,out_message);
 
+    //Final output
     strcat(out_message,"\n");
 
     if (options.o_command == NULL)
@@ -252,9 +266,7 @@ int main (int argc, char *argv[], char *envp[]){
         }
     }
 
-    if(options.mac_mode)
-        filepath = argv[argc-2];
-    else filepath = argv[argc-1];
+    filepath = options.mac_mode ? argv[argc-2] : argv[argc-1];
 
     analyze_path(filepath);
 
