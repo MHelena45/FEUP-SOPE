@@ -323,13 +323,13 @@ int main (int argc, char *argv[]){
             }
         }
     }
-	if (options.v_command){
-		if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
-			putenv("LOGFILENAME=log.txt");
-			options.log_filepath = getenv("LOGFILENAME");
-			remove(options.log_filepath);
-		}
-	}
+    if (options.v_command){
+        if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
+            putenv("LOGFILENAME=log.txt");
+            options.log_filepath = getenv("LOGFILENAME");
+            remove(options.log_filepath);
+        }
+    }
 
     //Log initial command
     if (options.v_command) {
@@ -347,6 +347,9 @@ int main (int argc, char *argv[]){
 
     if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
+
+    if (options.v_command && options.o_command != NULL)
+        printf("Execution records saved on file %s\n", options.log_filepath);
 
     exit(0);
 }
