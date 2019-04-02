@@ -31,22 +31,12 @@ void executeSystemCommand(char *command, char *result) {
 }
 
 bool checkHashMode(char *hashMode, uint8_t *hash_option) {
-    if (!strcmp(hashMode,"md5")) {
-        *hash_option |= MD5;
-        return true;
-    }
 
-    if (!strcmp(hashMode,"sha1")) {
-        *hash_option |= SHA1;
-        return true;
-    }
+    *hash_option |= !strcmp(hashMode,"md5") ? MD5:0;
+    *hash_option |= !strcmp(hashMode,"sha1") ? SHA1:0;
+    *hash_option |= !strcmp(hashMode,"sha256") ? SHA256:0;
 
-    if (!strcmp(hashMode,"sha256")) {
-        *hash_option |= SHA256;
-        return true;
-    }
-
-    return false;
+    return *hash_option;
 }
 
 void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash) {
