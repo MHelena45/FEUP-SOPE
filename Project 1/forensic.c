@@ -85,11 +85,10 @@ void getAllHashModes(char *fileChar, char *result) {
 }
 
 void analyze_file (char *filepath, struct stat *statdata){
-
     //Signal new file
     kill(options.parent_id, SIGUSR2);
 
-    //Log analized files
+    //Log analyzed files
     if (options.v_command) {
         char log_msg[255] = "ANALYZED ";
         strcat(log_msg, filepath);
@@ -137,7 +136,6 @@ void analyze_file (char *filepath, struct stat *statdata){
 }
 
 void analyze_path (char *filepath) {
-
     struct stat statdata;
 
     if (stat(filepath, &statdata) < 0){
@@ -174,7 +172,6 @@ void analyze_path (char *filepath) {
         }
 
         c_dir = opendir(filepath);
-
         while ( (dir = readdir(c_dir)) != NULL && options.r_command)  { //Read Directories after
 
             struct stat temp_stat;
@@ -188,7 +185,7 @@ void analyze_path (char *filepath) {
             //Check if Directory
             if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.' ){
                 if (fork() > 0){
-                    wait(NULL);
+                    //wait(NULL);//Directory at a time
                     continue;
                 }
                 else {
@@ -197,15 +194,15 @@ void analyze_path (char *filepath) {
                 }
             }
         }
+        wait(NULL); //All Directories in parallel
     }
-    else { //Path is a file
+    else {//Path is a file
         analyze_file(filepath, &statdata);
     }
 }
 
 
 int main (int argc, char *argv[]){
-
     //Initiate options struct values
     options.hashmode = 0b000;
     options.o_command = NULL;
@@ -257,12 +254,11 @@ int main (int argc, char *argv[]){
     //Start analyzing
     analyze_path(filepath);
 
-    //Print exit messages if writing to file
-    if (options.o_command != NULL) {
+    //Print exit messages
+    if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
-        if (options.v_command)
-            printf("Execution records saved on file %s\n", options.log_filepath);
-    }
+    if (options.v_command)
+        printf("Execution records saved on file %s\n", options.log_filepath);
 
     exit(0);
 }
