@@ -47,7 +47,7 @@ void sig_handler(int signo) //handler do sinal
         case SIGINT: {
             if (options.v_command) {
                 char log_msg[255] = "SIGNAL ";
-                strcat(log_msg, "SIGUSR1");
+                strcat(log_msg, "SIGINT");
                 log_command(log_msg);
             }
             exit(0);
@@ -69,17 +69,10 @@ void log_command(char *command){
 
 void getAllHashModes(char *fileChar, char *result) {
     char command[MAXLINE] = "";
-    char md5Hash[64];
-    char sha1Hash[64];
-    char sha256Hash[64];
-    char stripedHash[128];
+    char md5Hash[64], sha1Hash[64], sha256Hash[64], stripedHash[128];
 
     if(options.hashmode & MD5) {
-        memset(command,0,MAXLINE);
-        options.mac_mode ? strcat(command,MD5CMDMAC) : strcat(command,MD5CMD);
-        strcat(command, "\"");
-        strcat(command,fileChar);
-        strcat(command, "\"");
+        sprintf (command, "%s\"%s\"", options.mac_mode ? MD5CMDMAC:MD5CMD, fileChar);
         executeSystemCommand(command,md5Hash);
         stripHashCodeFromResult(md5Hash,stripedHash);
         strcat(result,",");
@@ -87,11 +80,7 @@ void getAllHashModes(char *fileChar, char *result) {
     }
 
     if(options.hashmode & SHA1) {
-        memset(command,0,MAXLINE);
-        options.mac_mode ? strcat(command,SHA1CMDMAC) : strcat(command,SHA1CMD);
-        strcat(command, "\"");
-        strcat(command,fileChar);
-        strcat(command, "\"");
+        sprintf (command, "%s\"%s\"",  options.mac_mode ? SHA1CMDMAC:SHA1CMD, fileChar);
         executeSystemCommand(command,sha1Hash);
         stripHashCodeFromResult(sha1Hash,stripedHash);
         strcat(result,",");
@@ -99,11 +88,7 @@ void getAllHashModes(char *fileChar, char *result) {
     }
 
     if(options.hashmode & SHA256) {
-        memset(command,0,MAXLINE);
-        options.mac_mode ? strcat(command,SHA256CMDMAC) : strcat(command,SHA256CMD);
-        strcat(command, "\"");
-        strcat(command,fileChar);
-        strcat(command, "\"");
+        sprintf (command, "%s\"%s\"", options.mac_mode ? SHA256CMDMAC:SHA256CMD, fileChar);
         executeSystemCommand(command,sha256Hash);
         stripHashCodeFromResult(sha256Hash,stripedHash);
         strcat(result,",");
@@ -123,11 +108,10 @@ void analyze_file (char *filepath, struct stat *statdata){
     }
 
     //File Name and Type
-    char cmd[260] = "file \"";
+    char cmd[260];
     char file_result[260] = "";
     bool comma = false;
-    strcat(cmd, filepath);
-    strcat(cmd, "\"");
+    sprintf(cmd, "file \"%s\"", filepath);
     executeSystemCommand(cmd, file_result);
     if (strchr(file_result, ',') != NULL)
         comma = true;
