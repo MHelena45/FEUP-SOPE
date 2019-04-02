@@ -15,10 +15,14 @@ void append_to_file(char *message, char *filepath){
     }
 }
 
-void executeSystemCommand(char *command, char *result) {
+void executeSystemCommand(char *command, char *arguments ,char *result) {
+
+    char cmd[260];
+    sprintf(cmd, "%s \"%s\"", command, arguments);
+
     int pipeStatus;
     FILE *fpout;
-    fpout = popen(command, "r");
+    fpout = popen(cmd, "r");
     if (fpout == NULL) {
         fprintf(stderr, "Error opening pipe");
         exit(1);
@@ -31,7 +35,6 @@ void executeSystemCommand(char *command, char *result) {
 }
 
 bool checkHashMode(char *hashMode, uint8_t *hash_option) {
-
     *hash_option |= !strcmp(hashMode,"md5") ? MD5:0;
     *hash_option |= !strcmp(hashMode,"sha1") ? SHA1:0;
     *hash_option |= !strcmp(hashMode,"sha256") ? SHA256:0;
@@ -54,6 +57,76 @@ void stripHashCodeFromResult(char *hashCodeResult, char *stripedHash) {
     }
     pointerPosition = strtok(hashCodeResult," ");
     strcat(stripedHash,pointerPosition);
+}
+
+void parse_arguments(int argc, char **argv, Options *options){
+
+    if (argc < 2){	/* Needs at least one argument */
+        printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
+        exit(1);
+    }
+
+    for (int i = 1; i < argc; ++i){	/* Parse arguments */
+
+        if (!strcmp(argv[i], "-r")){
+            options->r_command = true;
+            continue;
+        }
+
+        if (!strcmp(argv[i], "-h")){
+            if (i < argc - 2) {
+                char *ptr = strtok(argv[i + 1], ",");
+                while (ptr != NULL) {
+                    if (!checkHashMode(ptr, &options->hashmode)) {
+                        printf("Invalid parameter for hash function: [md5,sha1,sha256]\n");
+                        exit(1);
+                    }
+                    ptr = strtok(NULL,",");
+                }
+                ++i;
+                continue;
+            } else {
+                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
+                exit(1);
+            }
+        }
+
+        if (!strcmp(argv[i], "-v")){
+            options->v_command = true;
+            continue;
+        }
+
+        if (!strcmp(argv[i], "-o")){
+            if (i < argc - 2){
+                options->o_command = argv[i+1];
+                remove(options->o_command); //Delete file if it already exists
+                ++i;
+                continue;
+            }
+            else {
+                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
+                exit(1);
+            }
+        }
+
+        if(!strcmp(argv[i], "-mac")) {
+            if (i == argc - 1) {
+                options->mac_mode = true;
+                ++i;
+            } else {
+                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
+                exit(1);
+            }
+        }
+    }
+}
+
+void convert_timespec_to_string(time_t *org, char *dest){
+    struct tm tst;
+
+    //Modification Time
+    localtime_r(org, &tst);
+    sprintf(dest, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
 }
 
 

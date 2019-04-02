@@ -12,7 +12,7 @@
 #include "forensic.h"
 #include "forensic_aux.h"
 
-struct Options options;
+Options options;
 
 void sig_handler(int signo) //handler do sinal
 {
@@ -22,12 +22,10 @@ void sig_handler(int signo) //handler do sinal
     switch(signo){
         case SIGUSR1:{
             nDirectory++;
-            //Log analized files
-            if (options.v_command) {
-                char log_msg[255] = "SIGNAL ";
-                strcat(log_msg, "SIGUSR1");
-                log_command(log_msg);
-            }
+
+            if (options.v_command)
+                log_command("SIGNAL SIGUSR1");
+
             if (options.o_command != NULL) {
                 char mess[100];
                 sprintf(mess, "New directory: %i/ %i directories/files at this time.\n", nDirectory, nFiles);
@@ -37,19 +35,14 @@ void sig_handler(int signo) //handler do sinal
         }
         case SIGUSR2: {
             nFiles++;
-            if (options.v_command) {
-                char log_msg[255] = "SIGNAL ";
-                strcat(log_msg, "SIGUSR2");
-                log_command(log_msg);
-            }
+
+            if (options.v_command)
+                log_command("SIGNAL SIGUSR2");
             break;
         }
         case SIGINT: {
-            if (options.v_command) {
-                char log_msg[255] = "SIGNAL ";
-                strcat(log_msg, "SIGINT");
-                log_command(log_msg);
-            }
+            if (options.v_command)
+                log_command("SIGNAL SIGINT");
             exit(0);
         }
     }
@@ -64,32 +57,27 @@ void log_command(char *command){
 
     sprintf(log_out, "inst:%0.02f - pid: %d - act: %s\n", inst, getpid(), command);
     append_to_file(log_out, options.log_filepath);
-
 }
 
 void getAllHashModes(char *fileChar, char *result) {
-    char command[MAXLINE] = "";
     char md5Hash[64], sha1Hash[64], sha256Hash[64], stripedHash[128];
 
     if(options.hashmode & MD5) {
-        sprintf (command, "%s\"%s\"", options.mac_mode ? MD5CMDMAC:MD5CMD, fileChar);
-        executeSystemCommand(command,md5Hash);
+        executeSystemCommand( (options.mac_mode ? MD5CMDMAC:MD5CMD), fileChar, md5Hash);
         stripHashCodeFromResult(md5Hash,stripedHash);
         strcat(result,",");
         strcat(result,stripedHash);
     }
 
     if(options.hashmode & SHA1) {
-        sprintf (command, "%s\"%s\"",  options.mac_mode ? SHA1CMDMAC:SHA1CMD, fileChar);
-        executeSystemCommand(command,sha1Hash);
+        executeSystemCommand( (options.mac_mode ? SHA1CMDMAC:SHA1CMD), fileChar ,sha1Hash);
         stripHashCodeFromResult(sha1Hash,stripedHash);
         strcat(result,",");
         strcat(result,stripedHash);
     }
 
     if(options.hashmode & SHA256) {
-        sprintf (command, "%s\"%s\"", options.mac_mode ? SHA256CMDMAC:SHA256CMD, fileChar);
-        executeSystemCommand(command,sha256Hash);
+        executeSystemCommand( (options.mac_mode ? SHA256CMDMAC:SHA256CMD), fileChar, sha256Hash);
         stripHashCodeFromResult(sha256Hash,stripedHash);
         strcat(result,",");
         strcat(result,sha256Hash);
@@ -98,21 +86,20 @@ void getAllHashModes(char *fileChar, char *result) {
 
 void analyze_file (char *filepath, struct stat *statdata){
 
+    //Signal new file
     kill(options.parent_id, SIGUSR2);
 
     //Log analized files
     if (options.v_command) {
-        char log_msg[255] = "ANALIZED ";
+        char log_msg[255] = "ANALYZED ";
         strcat(log_msg, filepath);
         log_command(log_msg);
     }
 
     //File Name and Type
-    char cmd[260];
     char file_result[260] = "";
     bool comma = false;
-    sprintf(cmd, "file \"%s\"", filepath);
-    executeSystemCommand(cmd, file_result);
+    executeSystemCommand("file ", filepath, file_result);
     if (strchr(file_result, ',') != NULL)
         comma = true;
     char *file_name = strtok(file_result, ":");
@@ -121,38 +108,29 @@ void analyze_file (char *filepath, struct stat *statdata){
 
     //File Permissions
     char file_perm[4] = "";
-
     if (statdata->st_mode & S_IRUSR)
         strcat(file_perm, "r");
-
     if (statdata->st_mode & S_IWUSR)
         strcat(file_perm, "w");
-
     if (statdata->st_mode & S_IXUSR)
         strcat(file_perm, "x");
 
-    struct tm tst;
-
-    //Modification Time
-    char mod_time[19];
-    localtime_r(&statdata->st_mtime, &tst);
-    sprintf(mod_time, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
-
-    //Access Time
-    char acc_time[19];
-    localtime_r(&statdata->st_ctime, &tst);
-    sprintf(acc_time, "%d-%d-%dT%d:%d:%d", 1900 + tst.tm_year, tst.tm_mon, tst.tm_mday, tst.tm_hour, tst.tm_min, tst.tm_sec);
+    //Modification and last access times
+    char mod_time[19], acc_time[19];
+    convert_timespec_to_string(&statdata->st_mtime, mod_time);
+    convert_timespec_to_string(&statdata->st_ctime, acc_time);
 
     //Normal Output
     char out_message[1024];
     sprintf(out_message, "%s,%s,%ld,%s,%s,%s", file_name, file_type,statdata->st_size, file_perm, acc_time, mod_time);
 
     //Add optional hashes
-    getAllHashModes(filepath,out_message);
+    getAllHashModes(filepath, out_message);
 
     //Final output
     strcat(out_message,"\n");
 
+    //Print or save to file
     if (options.o_command == NULL)
         printf("%s", out_message);
     else append_to_file(out_message, options.o_command);
@@ -167,19 +145,19 @@ void analyze_path (char *filepath) {
         exit(1);
     }
 
-    if (S_ISDIR(statdata.st_mode)){ //Directory
+    if (S_ISDIR(statdata.st_mode)){ //Path is a directory
 
-        kill(options.parent_id, SIGUSR1);
+        kill(options.parent_id, SIGUSR1); //Signal Directory
 
         DIR *c_dir;
         struct dirent *dir;
         char temp_filename[257];
-        if ( (c_dir = opendir(filepath)) == NULL ){
+        if ( (c_dir = opendir(filepath)) == NULL ){ //Failed to open directory
             perror("Error");
             exit(1);
         }
 
-        while ( (dir = readdir(c_dir)) != NULL)  { //Read files first
+        while ( (dir = readdir(c_dir)) != NULL)  { //Read all files in the directory first
 
             struct stat temp_stat;
             sprintf(temp_filename, "%s/%s", filepath, dir->d_name);
@@ -220,7 +198,7 @@ void analyze_path (char *filepath) {
             }
         }
     }
-    else { //Single file
+    else { //Path is a file
         analyze_file(filepath, &statdata);
     }
 }
@@ -228,6 +206,7 @@ void analyze_path (char *filepath) {
 
 int main (int argc, char *argv[]){
 
+    //Initiate options struct values
     options.hashmode = 0b000;
     options.o_command = NULL;
     options.r_command = false;
@@ -235,78 +214,24 @@ int main (int argc, char *argv[]){
     options.mac_mode = false;
     options.parent_id = getpid();
 
-    char* filepath;
+    //Save program launch time
+    gettimeofday(&options.start_time, NULL);
+
+    //Signal Handler installer
     struct sigaction action;
     action.sa_handler = sig_handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
 
-    gettimeofday(&options.start_time, NULL);
-
-    //Signal Handler installer
     if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
         fprintf(stderr,"Unable to install signal handler\n");
         exit(1);
     }
 
-    if (argc < 2){	/* Needs at least one argument */
-        printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
-        exit(1);
-    }
+    //Parse the command arguments
+    parse_arguments(argc, argv, &options);
 
-    for (int i = 1; i < argc; ++i){	/* Parse arguments */
-
-        if (!strcmp(argv[i], "-r")){
-            options.r_command = true;
-            continue;
-        }
-
-        if (!strcmp(argv[i], "-h")){
-            if (i < argc - 2) {
-                char *ptr = strtok(argv[i + 1], ",");
-                while (ptr != NULL) {
-                    if (!checkHashMode(ptr, &options.hashmode)) {
-                        printf("Invalid parameter for hash function: [md5,sha1,sha256]\n");
-                        exit(1);
-                    }
-                    ptr = strtok(NULL,",");
-                }
-                ++i;
-                continue;
-            } else {
-                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
-                exit(1);
-            }
-        }
-
-        if (!strcmp(argv[i], "-v")){
-            options.v_command = true;
-            continue;
-        }
-
-        if (!strcmp(argv[i], "-o")){
-            if (i < argc - 2){
-                options.o_command = argv[i+1];
-                remove(options.o_command); //Delete file if it already exists
-                ++i;
-                continue;
-            }
-            else {
-                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
-                exit(1);
-            }
-        }
-
-        if(!strcmp(argv[i], "-mac")) {
-            if (i == argc - 1) {
-                options.mac_mode = true;
-                ++i;
-            } else {
-                printf("forensic [-r] [-h [md5[,sha1[,sha256]]] [-o <outfile>] [-v] <file|dir>\n");
-                exit(1);
-            }
-        }
-    }
+    //Get the log file name from the env variable, create it when missing
     if (options.v_command){
         if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
             putenv("LOGFILENAME=log.txt");
@@ -325,15 +250,19 @@ int main (int argc, char *argv[]){
         log_command(log_msg);
     }
 
+    //Filepath depending on mac or linux
+    char* filepath;
     filepath = options.mac_mode ? argv[argc-2] : argv[argc-1];
 
+    //Start analyzing
     analyze_path(filepath);
 
-    if (options.o_command != NULL)
+    //Print exit messages if writing to file
+    if (options.o_command != NULL) {
         printf("Data saved on file %s\n", options.o_command);
-
-    if (options.v_command && options.o_command != NULL)
-        printf("Execution records saved on file %s\n", options.log_filepath);
+        if (options.v_command)
+            printf("Execution records saved on file %s\n", options.log_filepath);
+    }
 
     exit(0);
 }
