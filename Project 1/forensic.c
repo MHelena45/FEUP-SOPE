@@ -180,7 +180,6 @@ void analyze_path (char *filepath) {
                     exit(0);
                 }
             }
-            wait(NULL); //All Directories in parallel
         }
     }
     else {//Path is a file
@@ -238,6 +237,10 @@ int main (int argc, char *argv[]){
 
     //Start analyzing
     analyze_path(filepath);
+
+    int wpid;
+    while ((wpid = wait(NULL) > 0)); //All Directories in parallel, wait for all children to terminate
+
     //Print exit messages
     if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
