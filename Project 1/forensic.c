@@ -14,7 +14,7 @@
 
 Options options;
 
-void sig_handler(int signo) //handler do sinal
+void sig_handler(int signo) //Signal handler
 {
     static int nDirectory = 0;
     static int nFiles = 0;
@@ -86,7 +86,8 @@ void getAllHashModes(char *fileChar, char *result) {
 
 void analyze_file (char *filepath, struct stat *statdata){
     //Signal new file
-    kill(options.parent_id, SIGUSR2);
+    if (options.o_command)
+        kill(options.parent_id, SIGUSR2);
 
     //Log analyzed files
     if (options.v_command) {
@@ -136,6 +137,7 @@ void analyze_file (char *filepath, struct stat *statdata){
 }
 
 void analyze_path (char *filepath) {
+
     struct stat statdata;
 
     if (stat(filepath, &statdata) < 0){
@@ -145,7 +147,8 @@ void analyze_path (char *filepath) {
 
     if (S_ISDIR(statdata.st_mode)){ //Path is a directory
 
-        kill(options.parent_id, SIGUSR1); //Signal Directory
+        if (options.o_command)
+            kill(options.parent_id, SIGUSR1); //Signal Directory
 
         DIR *c_dir;
         struct dirent *dir;
@@ -155,13 +158,13 @@ void analyze_path (char *filepath) {
             exit(1);
         }
 
-        while ( (dir = readdir(c_dir)) != NULL)  { //Read all files in the directory first
+        while ( (dir = readdir(c_dir)) != NULL) { //Read all files in the directory first
 
             struct stat temp_stat;
             sprintf(temp_filename, "%s/%s", filepath, dir->d_name);
 
             //Check if path exists
-            if (stat(temp_filename, &temp_stat) < 0){
+            if (stat(temp_filename, &temp_stat) < 0) {
                 perror("Error");
                 exit(1);
             }
@@ -169,40 +172,33 @@ void analyze_path (char *filepath) {
             //Check if regular file
             if (S_ISREG(temp_stat.st_mode))
                 analyze_file(temp_filename, &temp_stat);
-        }
-
-        c_dir = opendir(filepath);
-        while ( (dir = readdir(c_dir)) != NULL && options.r_command)  { //Read Directories after
-
-            struct stat temp_stat;
-            sprintf(temp_filename, "%s/%s", filepath, dir->d_name);
-
-            //Check if path exists
-            if (stat(temp_filename, &temp_stat) < 0){
-                perror("Error");
-                exit(1);
-            }
-            //Check if Directory
-            if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.' ){
-                if (fork() > 0){
-                    //wait(NULL);//Directory at a time
+            else if (S_ISDIR(temp_stat.st_mode) && dir->d_name[0] != '.') {
+                if (fork() > 0) {
                     continue;
-                }
-                else {
+                } else {
                     analyze_path(temp_filename);
                     exit(0);
                 }
             }
+            wait(NULL); //All Directories in parallel
         }
-        wait(NULL); //All Directories in parallel
     }
     else {//Path is a file
         analyze_file(filepath, &statdata);
     }
 }
 
-
 int main (int argc, char *argv[]){
+    //Signal Handler installer
+    struct sigaction action;
+    action.sa_handler = sig_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
+        fprintf(stderr,"Unable to install signal handler\n");
+        exit(1);
+    }
+
     //Initiate options struct values
     options.hashmode = 0b000;
     options.o_command = NULL;
@@ -214,27 +210,16 @@ int main (int argc, char *argv[]){
     //Save program launch time
     gettimeofday(&options.start_time, NULL);
 
-    //Signal Handler installer
-    struct sigaction action;
-    action.sa_handler = sig_handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    if ( (sigaction(SIGINT,&action,NULL) < 0) || (sigaction(SIGUSR1,&action,NULL) < 0) || (sigaction(SIGUSR2,&action,NULL) < 0) ) {
-        fprintf(stderr,"Unable to install signal handler\n");
-        exit(1);
-    }
-
     //Parse the command arguments
     parse_arguments(argc, argv, &options);
 
     //Get the log file name from the env variable, create it when missing
     if (options.v_command){
         if ( (options.log_filepath = getenv("LOGFILENAME")) == NULL) {
-            putenv("LOGFILENAME=log.txt");
-            options.log_filepath = getenv("LOGFILENAME");
-            remove(options.log_filepath);
+            printf("-v: Can not generate log, environment variable \"LOGFILENAME\" does not exist.\n");
+            exit(1);
         }
+        remove(options.log_filepath);
     }
 
     //Log initial command
@@ -253,7 +238,6 @@ int main (int argc, char *argv[]){
 
     //Start analyzing
     analyze_path(filepath);
-
     //Print exit messages
     if (options.o_command != NULL)
         printf("Data saved on file %s\n", options.o_command);
