@@ -122,7 +122,13 @@ void analyze_file (char *filepath, struct stat *statdata){
 
     //Normal Output
     char out_message[1024];
+
+    //This is to avoid warnings on MacOs.
+    //MacOs treats ld has lld
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
     sprintf(out_message, "%s,%s,%ld,%s,%s,%s", file_name, file_type,statdata->st_size, file_perm, acc_time, mod_time);
+#pragma GCC diagnostic pop
 
     //Add optional hashes
     getAllHashModes(filepath, out_message);
