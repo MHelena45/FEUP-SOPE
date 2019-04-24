@@ -45,6 +45,11 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
 
+    bank_account_t accounts [MAX_BANK_ACCOUNTS];//Change to a vector or list later
+    accounts[ADMIN_ACCOUNT_ID].account_id = ADMIN_ACCOUNT_ID;
+    accounts[ADMIN_ACCOUNT_ID].balance = 0;
+    //TODO: Hash password
+
 
     int server_fifo_fd;
 

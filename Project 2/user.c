@@ -37,7 +37,7 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
     int delay = atoi(argv[3]);
-    int opcode = atoi(argv[4]);
+    op_type_t opcode = atoi(argv[4]);
     char* arguments = argv[5]; 
 
     //User FIFO creation
