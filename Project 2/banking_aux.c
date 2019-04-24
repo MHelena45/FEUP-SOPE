@@ -17,7 +17,7 @@ void create_fifo (char* fifo_name){
 }
 
 void remove_fifo (char *fifo_name){
-    if (unlink("/tmp/requests")<0){
+    if (unlink(fifo_name)<0){
         printf("Error when destroying FIFO '%s'\n", fifo_name);
         exit(-1);
     }
