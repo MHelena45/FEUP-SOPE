@@ -7,6 +7,9 @@
 #include <sys/file.h>
 #include <string.h> 
 #include <errno.h>
+#include "types.h"
+#include "sope.h"
+#include "constants.h"
 
 void create_fifo (char* fifo_name){
     if (mkfifo(fifo_name, 0660) < 0){
@@ -48,4 +51,13 @@ void run_pipe_command(char *command, char *arguments ,char *result) {
     if(pipeStatus == -1) {
         fprintf(stderr, "Error closing pipe");
     }
+}
+
+bool is_valid_password(char *password){
+    if (strlen(password) < MIN_PASSWORD_LEN)
+        return false;    
+    if (strlen(password) > MAX_PASSWORD_LEN)
+        return false;
+    
+    return true;
 }

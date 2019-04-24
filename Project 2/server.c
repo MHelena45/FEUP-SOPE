@@ -9,6 +9,9 @@
 #include <errno.h>
 #include <string.h>
 #include "banking_aux.h"
+#include "types.h"
+#include "sope.h"
+#include "constants.h"
 
     /*
         TODO:
@@ -36,19 +39,25 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
     int threads_number = atoi(argv[1]);
-    char *admin_passowrd = argv[2];
+    char *admin_password = argv[2];
+    if (!is_valid_password(admin_password)){
+        printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
+        exit(-1);
+    }
+
+
     int server_fifo_fd;
 
     //TODO: Create admin account
     //TODO: Create server threads
     
     //Server FIFO creation
-    create_fifo(SERVER_FIFO_NAME);
+    create_fifo(SERVER_FIFO_PATH);
 
     //TODO: Listen and process requests, log requests and responses
 
     //Server FIFO removal
-    remove_fifo(SERVER_FIFO_NAME);
+    remove_fifo(SERVER_FIFO_PATH);
 
  exit(0);
 } 
