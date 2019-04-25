@@ -7,8 +7,6 @@
 #include <sys/file.h>
 #include <string.h> 
 #include <errno.h>
-#include "types.h"
-#include "sope.h"
 #include "constants.h"
 
 void create_fifo (char* fifo_name){
@@ -60,4 +58,19 @@ bool is_valid_password(char *password){
         return false;
     
     return true;
+}
+
+void get_tlv_request(tlv_request_t *request, char*argv[]){
+
+    request->type = atoi(argv[4]);
+    int password_length = strlen(argv[2]);
+    memcpy(request->value.header.password, argv[2], sizeof(char) * password_length);
+    request->value.header.password[password_length] = '\0'; //Terminate string
+    request->value.header.pid = getpid();
+    request->value.header.op_delay_ms = atoi(argv[3]);
+    request->value.header.account_id = atoi(argv[1]);
+    request->length = sizeof(request->value);
+
+    // TODO: parse arguments, add create/transfer arguments when needed;
+    // TODO: rep_balance_t, rep_transfer_t or rep_shutdown_t in request->value
 }

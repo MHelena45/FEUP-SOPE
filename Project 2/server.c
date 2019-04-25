@@ -13,24 +13,22 @@
 #include "sope.h"
 #include "constants.h"
 
-    /*
-        TODO:
-        1 - Create admin account (bank_account_t?),  password in arguments
-        
-        2 - Create threads (max 99)
-            2.1 - Log thread operations: "I - thread id - OPEN/CLOSE 'POSIX THREAD ID'"
-                    (logBankOfficeOpen/Close()?) ex: "I - 00001 - OPEN 140177458939648"
-
-        3 - Create FIFO /tmp/secure_srv
-        
-        4 - Listen for requests, close when terminated by admin
-            4.1 - Can only terminate after handling all pending requests, make FIFO read only
-                  till close.
-            4.2 - Log requests and responses to slog.txt
-        
-        5 - Remove FIFO
-    */
-
+/**
+ * TODO:
+ * 1 - Create admin account (bank_account_t?),  password in arguments
+ * 
+ * 2 - Create threads (max 99)
+ *  2.1 - Log thread operations: "I - thread id - OPEN/CLOSE 'POSIX THREAD ID'"
+ *          
+ * 3 - Create FIFO /tmp/secure_srv
+ * 
+ * 4 - Listen for requests, close when terminated by admin
+ *  4.1 - Can only terminate after handling all pending requests, make FIFO read only
+ *          till close.
+ *  4.2 - Log requests and responses to slog.txt
+ * 
+ *  5 - Remove FIFO
+*/
 
 int main(int argc, char *argv[]){
 
