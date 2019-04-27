@@ -73,7 +73,7 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
     request->value.header.op_delay_ms = atoi(argv[3]);
     if (request->value.header.op_delay_ms > MAX_OP_DELAY_MS){
         printf("The maximum value for delay is %d\n", MAX_OP_DELAY_MS);
-        exit(-1);
+        return false;
     }
     request->value.header.account_id = atoi(argv[1]);
     request->length = sizeof(request->value);
@@ -81,7 +81,6 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
     char **args = (char**) malloc (strlen(argv[5]));
     int argc = get_string_arguments(argv[5], args);
     switch (request->type){
-
         case OP_CREATE_ACCOUNT: {
             if (argc < 3){
                 printf("To create an account id, balance and password are needed\n");
@@ -103,7 +102,6 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
             request->value.transfer.amount = atoi(args[1]);
             break;
         }
-
         default: break;
     }
     return true;
