@@ -23,7 +23,7 @@ int main(int argc, char *argv[]){
     }
     if (!is_valid_password(argv[2])){
         printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     /**
      * Build request struct
@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
     char* arguments = argv[5];
     tlv_request_t request;
     if (!build_tlv_request(&request, argv))
-        exit(-1);
+        exit(EXIT_FAILURE);
     /**
      * Log Request
      */
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]){
     int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY);
     if (server_fifo_fd == -1){
         printf("Server is not available\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     write(server_fifo_fd, arguments, strlen(arguments));
     close (server_fifo_fd);
@@ -72,5 +72,5 @@ int main(int argc, char *argv[]){
     remove_fifo(fifo_path);
     free(fifo_path);
 
-exit(0);
+exit(EXIT_SUCCESS);
 } 

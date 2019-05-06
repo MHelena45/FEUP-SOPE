@@ -19,17 +19,17 @@ int main(int argc, char *argv[]){
 
     if (argc < 3){
         printf("server [Number of bank offices] [Administrator password]\n");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     int threads_number = atoi(argv[1]);
     if (threads_number > MAX_BANK_OFFICES){
         printf("The maximum number of bank offices is %d\n", MAX_BANK_OFFICES);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     char *admin_password = argv[2];
     if (!is_valid_password(admin_password)){
         printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
     /**
      * Initiate threads and bank accounts arrays
@@ -63,5 +63,5 @@ int main(int argc, char *argv[]){
     //Server FIFO removal
     remove_fifo(SERVER_FIFO_PATH);
 
- exit(0);
+ exit(EXIT_SUCCESS);
 } 
