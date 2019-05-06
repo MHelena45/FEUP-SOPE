@@ -8,6 +8,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "banking_aux.h"
 #include "types.h"
@@ -31,9 +32,13 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
     /**
+     * Initiate threads and bank accounts arrays
+     */
+    bank_account_t accounts [MAX_BANK_ACCOUNTS];
+    pthread_t threads[threads_number];
+    /**
      * Create admin account
      */
-    bank_account_t accounts [MAX_BANK_ACCOUNTS];//Change to a vector maybe?
     accounts[ADMIN_ACCOUNT_ID].account_id = ADMIN_ACCOUNT_ID;
     accounts[ADMIN_ACCOUNT_ID].balance = 0;
     //TODO: Hash password using a pipe to sha256sum

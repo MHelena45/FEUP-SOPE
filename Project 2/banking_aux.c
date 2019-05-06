@@ -1,4 +1,3 @@
-#include "banking_aux.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,7 +6,9 @@
 #include <sys/file.h>
 #include <string.h> 
 #include <errno.h>
+
 #include "constants.h"
+#include "banking_aux.h"
 
 void create_fifo (char* fifo_name){
     if (mkfifo(fifo_name, 0660) < 0){

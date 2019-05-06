@@ -70,6 +70,7 @@ int main(int argc, char *argv[]){
      * Remove user FIFO
      */
     remove_fifo(fifo_path);
+    free(fifo_path);
 
 exit(0);
 } 
