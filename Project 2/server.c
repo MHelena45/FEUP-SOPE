@@ -35,19 +35,14 @@ int main(int argc, char *argv[]){
      * Initiate threads and bank accounts arrays
      */
     bank_account_t accounts [MAX_BANK_ACCOUNTS];
+    pthread_t threads[threads_number]; //TODO: Create server threads
+    /**
+     * Create admin account
+     */
     create_bank_account(&accounts[ADMIN_ACCOUNT_ID], admin_password, ADMIN_ACCOUNT_ID, 0);
     int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
     logAccountCreation(server_log_fd, 0, &accounts[ADMIN_ACCOUNT_ID]);
     close(server_log_fd);
-
-    pthread_t threads[threads_number];
-    /**
-     * Create admin account
-     */
-    
-    //TODO: Hash password using a pipe to sha256sum
-    //accounts[ADMIN_ACCOUNT_ID].hash
-    //accounts[ADMIN_ACCOUNT_ID].salt
 
     /**
      * Server FIFO creation
@@ -55,7 +50,6 @@ int main(int argc, char *argv[]){
     create_fifo(SERVER_FIFO_PATH);
 
     /**
-     * TODO: Create server threads
      * TODO: Handle requests to server fifo
      * TODO: Log thread sync actions to SERVER_LOGFILE
      * TODO: Log requests to SERVER_LOGFILE
