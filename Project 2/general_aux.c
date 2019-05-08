@@ -24,12 +24,10 @@ void remove_fifo (char *fifo_name){
     }
 }
 
-void run_pipe_command(char *command, char *arguments ,char *result) {
-    char cmd[260];
-    sprintf(cmd, "%s \"%s\"", command, arguments);
+void run_pipe_command(char *command ,char *result) {
     int pipeStatus;
     FILE *fpout;
-    fpout = popen(cmd, "r");
+    fpout = popen(command, "r");
     if (fpout == NULL) {
         fprintf(stderr, "Error opening pipe");
         exit(EXIT_FAILURE);
@@ -61,14 +59,11 @@ int get_string_arguments(char* arguments, char*argv[]){
 }
 
 void generate_sha256_hash(char *password, char salt[], char hash[]){  
-    FILE *file;
-    file = fopen("shatemp", "w");
-    fprintf(file, "%s%s", password, salt);
+    char sha256sum_command[MAXLINE];
+    sprintf(sha256sum_command, "echo -n \"%s\" | sha256sum", salt);
     char pipe_result[MAXLINE];
-    run_pipe_command("sha256sum", "shatemp", pipe_result);
-    memcpy(hash, pipe_result, HASH_LEN);
-    fclose(file);
-    remove("shatemp");
+    run_pipe_command(sha256sum_command, pipe_result);
+    hash = strtok(pipe_result, " ");
     hash[HASH_LEN] = '\0';
 }
 

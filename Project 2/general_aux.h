@@ -6,7 +6,7 @@
 void create_fifo (char* fifo_name);
 void remove_fifo (char *fifo_name);
 
-void run_pipe_command(char *command, char *arguments ,char *result);
+void run_pipe_command(char *command, char *result);
 
 bool is_valid_password(char *password);
 
