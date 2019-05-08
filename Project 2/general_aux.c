@@ -60,10 +60,11 @@ int get_string_arguments(char* arguments, char*argv[]){
 
 void generate_sha256_hash(char *password, char salt[], char hash[]){  
     char sha256sum_command[MAXLINE];
-    sprintf(sha256sum_command, "echo -n \"%s\" | sha256sum", salt);
+    sprintf(sha256sum_command, "echo -n \"%s%s\" | sha256sum", password, salt);
     char pipe_result[MAXLINE];
     run_pipe_command(sha256sum_command, pipe_result);
-    hash = strtok(pipe_result, " ");
+    char *temp_ptr = strtok(pipe_result, " ");
+    strcpy(hash, temp_ptr);
     hash[HASH_LEN] = '\0';
 }
 
