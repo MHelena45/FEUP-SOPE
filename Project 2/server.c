@@ -14,6 +14,7 @@
 
 int main(int argc, char *argv[]){
 
+    /** Verify command **/
     if (argc < 3){
         printf("server [Number of bank offices] [Administrator password]\n");
         exit(EXIT_FAILURE);
@@ -28,25 +29,21 @@ int main(int argc, char *argv[]){
         printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
         exit(EXIT_FAILURE);
     }
-
+    
+    /** Initiate random seed **/
     srand(time(NULL));
 
-    /**
-     * Initiate threads and bank accounts arrays
-     */
+    /** Initiate threads and bank accounts arrays **/
     bank_account_t accounts [MAX_BANK_ACCOUNTS];
     pthread_t threads[threads_number]; //TODO: Create server threads
-    /**
-     * Create admin account
-     */
+    
+    /** Create admin account **/
     create_bank_account(&accounts[ADMIN_ACCOUNT_ID], admin_password, ADMIN_ACCOUNT_ID, 0);
     int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
     logAccountCreation(server_log_fd, 0, &accounts[ADMIN_ACCOUNT_ID]);
     close(server_log_fd);
 
-    /**
-     * Server FIFO creation
-     */
+    /** Server FIFO creation **/
     create_fifo(SERVER_FIFO_PATH);
 
     /**
@@ -58,8 +55,8 @@ int main(int argc, char *argv[]){
      * TODO: Handle all pending requests before exiting when receiving shutdown request
      */
 
-    //Server FIFO removal
+    /* Server FIFO removal */
     remove_fifo(SERVER_FIFO_PATH);
 
- exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 } 

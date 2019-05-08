@@ -14,9 +14,7 @@
 
 int main(int argc, char *argv[]){
 
-    /**
-     * Verify command
-     */
+    /** Verify command **/
     if (argc < 6){
         printf("user [Account ID] [Account Password] [Delay in ms] [Operation code] [Argument list]\n");
         exit(-1);
@@ -25,28 +23,24 @@ int main(int argc, char *argv[]){
         printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
         exit(EXIT_FAILURE);
     }
-    /**
-     * Build request struct
-     */
+    
+    /** Build request struct **/
     char* arguments = argv[5];
     tlv_request_t request;
     if (!build_tlv_request(&request, argv))
         exit(EXIT_FAILURE);
-    /**
-     * Log Request
-     */
+    
+    /** Log Request **/
     int user_log_fd = open(USER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
     logRequest(user_log_fd, request.value.header.pid, &request);
     close(user_log_fd);
-    /**
-     * Create user FIFO
-     */
-    char *fifo_path = (char*)malloc(USER_FIFO_PATH_LEN);
+    
+    /** Create user FIFO **/
+    char fifo_path[USER_FIFO_PATH_LEN];
     sprintf(fifo_path, "%s%0*d",USER_FIFO_PATH_PREFIX, WIDTH_ID, request.value.header.pid);
     create_fifo(fifo_path);
-    /**
-     * Write request to server fifo
-     */
+    
+    /** Write request to server fifo **/
     int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY);
     if (server_fifo_fd == -1){
         printf("Server is not available\n");
@@ -54,9 +48,8 @@ int main(int argc, char *argv[]){
     }
     write(server_fifo_fd, arguments, strlen(arguments));
     close (server_fifo_fd);
-    /**
-     * Wait for server response
-     */ 
+
+    /** Wait for server response **/ 
     clock_t start_t = clock();
     while ( ((double)(clock()-start_t) / CLOCKS_PER_SEC) < FIFO_TIMEOUT_SECS){
         /**
@@ -65,12 +58,8 @@ int main(int argc, char *argv[]){
          */
     } 
 
-
-    /**
-     * Remove user FIFO
-     */
+    /** Remove user FIFO **/
     remove_fifo(fifo_path);
-    free(fifo_path);
 
-exit(EXIT_SUCCESS);
+    exit(EXIT_SUCCESS);
 } 
