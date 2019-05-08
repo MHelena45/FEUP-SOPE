@@ -1,19 +1,16 @@
 /*   servidor      */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <signal.h>
-#include <errno.h>
 #include <string.h>
+#include <sys/file.h>
 #include <pthread.h>
+#include <time.h>
 
 #include "banking_aux.h"
 #include "types.h"
 #include "sope.h"
 #include "constants.h"
+#include "general_aux.h"
 
 int main(int argc, char *argv[]){
 
@@ -31,16 +28,23 @@ int main(int argc, char *argv[]){
         printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
         exit(EXIT_FAILURE);
     }
+
+    srand(time(NULL));
+
     /**
      * Initiate threads and bank accounts arrays
      */
     bank_account_t accounts [MAX_BANK_ACCOUNTS];
+    create_bank_account(&accounts[ADMIN_ACCOUNT_ID], admin_password, ADMIN_ACCOUNT_ID, 0);
+    int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+    logAccountCreation(server_log_fd, 0, &accounts[ADMIN_ACCOUNT_ID]);
+    close(server_log_fd);
+
     pthread_t threads[threads_number];
     /**
      * Create admin account
      */
-    accounts[ADMIN_ACCOUNT_ID].account_id = ADMIN_ACCOUNT_ID;
-    accounts[ADMIN_ACCOUNT_ID].balance = 0;
+    
     //TODO: Hash password using a pipe to sha256sum
     //accounts[ADMIN_ACCOUNT_ID].hash
     //accounts[ADMIN_ACCOUNT_ID].salt

@@ -1,10 +1,10 @@
 all: user server
 
-user: banking_aux.c user.c log.c
-	gcc -Wall -Wextra banking_aux.c user.c log.c -o user
+user: banking_aux.c user.c log.c general_aux.c
+	gcc -Wall -Wextra banking_aux.c user.c log.c general_aux.c -o user
 
-server: banking_aux.c server.c log.c
-	gcc -Wall -Wextra banking_aux.c server.c log.c -o server
+server: banking_aux.c server.c log.c general_aux.c
+	gcc -Wall -Wextra banking_aux.c server.c log.c general_aux.c -o server
 
 clean:
 	rm -f *.o user

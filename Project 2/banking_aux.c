@@ -1,66 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
 #include <string.h> 
-#include <errno.h>
 
 #include "constants.h"
 #include "banking_aux.h"
+#include "general_aux.h"
 
-void create_fifo (char* fifo_name){
-    if (mkfifo(fifo_name, 0660) < 0){
-        if (errno==EEXIST) printf("FIFO '%s' already exists\n", fifo_name);
-        else printf("Can't create FIFO '%s'\n", fifo_name);
-        exit(-1);
-    }
-}
-
-void remove_fifo (char *fifo_name){
-    if (unlink(fifo_name)<0){
-        printf("Error when destroying FIFO '%s'\n", fifo_name);
-        exit(-1);
-    }
-}
-
-void run_pipe_command(char *command, char *arguments ,char *result) {
-    char cmd[260];
-    sprintf(cmd, "%s \"%s\"", command, arguments);
-
-    int pipeStatus;
-    FILE *fpout;
-    fpout = popen(cmd, "r");
-    if (fpout == NULL) {
-        fprintf(stderr, "Error opening pipe");
-        exit(1);
-    }
-    fgets(result, MAXLINE, fpout);
-    pipeStatus = pclose(fpout);
-    if(pipeStatus == -1) {
-        fprintf(stderr, "Error closing pipe");
-    }
-}
-
-bool is_valid_password(char *password){
-    if (strlen(password) < MIN_PASSWORD_LEN)
-        return false;    
-    if (strlen(password) > MAX_PASSWORD_LEN)
-        return false;
-    
-    return true;
-}
-
-int get_string_arguments(char* arguments, char*argv[]){
-    int argc = 0;
-    char *ptr = strtok(arguments, " ");
-    while (ptr != NULL){
-        argv[argc] = ptr;
-        ptr = strtok(NULL, " ");
-        ++argc;
-    }
-    return argc;
+void create_bank_account (bank_account_t *acc, char*password, int acc_id, int balance){
+    acc->account_id = acc_id;
+    acc->balance = balance;
+    generate_password_salt(acc->salt);
+    generate_sha256_hash(password, acc->salt, acc->hash);
 }
 
 bool build_tlv_request(tlv_request_t *request, char*argv[]){
@@ -107,4 +57,6 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
     }
     return true;
 }
+
+
 
