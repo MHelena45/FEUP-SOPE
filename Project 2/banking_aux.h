@@ -6,4 +6,4 @@
 
 bool build_tlv_request(tlv_request_t *request, char*argv[]);
 
-void create_bank_account (bank_account_t *acc, char*password, int acc_id, int balance);
+bool create_bank_account (bank_account_t acc[], char*password, int acc_id, int balance);

@@ -38,7 +38,8 @@ int main(int argc, char *argv[]){
     pthread_t threads[threads_number]; //TODO: Create server threads
     
     /** Create admin account **/
-    create_bank_account(&accounts[ADMIN_ACCOUNT_ID], admin_password, ADMIN_ACCOUNT_ID, 0);
+    create_bank_account(accounts, admin_password, ADMIN_ACCOUNT_ID, 0);
+
     int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
     logAccountCreation(server_log_fd, 0, &accounts[ADMIN_ACCOUNT_ID]);
     close(server_log_fd);
