@@ -39,7 +39,6 @@ int main(int argc, char *argv[]){
     
     /** Create admin account **/
     create_bank_account(accounts, admin_password, ADMIN_ACCOUNT_ID, 0);
-
     int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
     logAccountCreation(server_log_fd, 0, &accounts[ADMIN_ACCOUNT_ID]);
     close(server_log_fd);
@@ -56,6 +55,12 @@ int main(int argc, char *argv[]){
 
     while (operation != OP_SHUTDOWN){
         if (read(server_fifo_fd, &request, sizeof(request)) > 0){
+            /* Log request */
+            int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+            logRequest(server_log_fd, request.value.header.pid, &request);
+            close(server_log_fd);
+
+            /* Verify account and handle request*/
             operation = request.type;
             char *user_pw = request.value.header.password;
             uint32_t acc_id = request.value.header.account_id;

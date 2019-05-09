@@ -9,7 +9,6 @@
 bool create_bank_account (bank_account_t acc[], char*password, int acc_id, int balance){
     if (strlen(acc[acc_id].hash) != 0)
         return false;
-    printf("%d", strlen(acc[acc_id].hash));
     acc[acc_id].account_id = acc_id;
     acc[acc_id].balance = balance;
     generate_password_salt(acc[acc_id].salt);
