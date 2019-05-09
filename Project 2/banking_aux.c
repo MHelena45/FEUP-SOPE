@@ -63,5 +63,32 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
     return true;
 }
 
+void handle_request (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply){
 
+    switch(request->type){
+        case OP_CREATE_ACCOUNT: {
+            //Verify if request account id is ADMIN_ACCOUNT_ID   
+            // create_bank_accout returns true if account creation was possible false otherwise
+            break;
+        }
+
+        case OP_BALANCE: {
+
+            break;
+        }
+
+        case OP_TRANSFER: {
+
+            break;
+        }
+
+
+        case OP_SHUTDOWN: {
+            //Verify if request account id is ADMIN_ACCOUNT_ID 
+            break;
+        }
+        default:break;
+    }
+
+}
 

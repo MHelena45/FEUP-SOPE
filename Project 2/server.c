@@ -12,7 +12,45 @@
 #include "constants.h"
 #include "general_aux.h"
 
-int main(int argc, char *argv[]){
+bank_account_t accounts[MAX_BANK_ACCOUNTS];
+
+void read_request(void *req){
+
+    tlv_request_t *request = (tlv_request_t *) req;
+
+    /* Log request */
+    int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+    logRequest(server_log_fd, request->value.header.pid, request);
+    close(server_log_fd);
+
+    /* Verify account and handle request*/
+    char *user_pw = request->value.header.password;
+    uint32_t acc_id = request->value.header.account_id;
+    char hash[HASH_LEN];
+    generate_sha256_hash(user_pw, accounts[acc_id].salt, hash);
+
+    if (strcmp(hash, accounts[acc_id].hash)) { //account validation
+        /**
+         * ! Temporary
+         */
+        printf("Wrong user/password\n");
+    }
+    else{
+        tlv_reply_t reply;
+        handle_request(request, accounts, &reply); //TODO
+
+        //User Reply
+            //TODO
+
+        //Log reply
+        int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+        logReply(server_log_fd, request->value.header.pid, &reply);
+        close(server_log_fd);
+    }
+}
+
+int main(int argc, char *argv[])
+{
 
     /** Verify command **/
     if (argc < 3){
@@ -26,17 +64,16 @@ int main(int argc, char *argv[]){
     }
     char *admin_password = argv[2];
     if (!is_valid_password(admin_password)){
-        printf ("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
+        printf("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
         exit(EXIT_FAILURE);
     }
-    
+
     /** Initiate random seed **/
     srand(time(NULL));
 
-    /** Initiate threads and bank accounts arrays **/
-    bank_account_t accounts [MAX_BANK_ACCOUNTS];
+    /** Initiate threads**/
     pthread_t threads[threads_number]; //TODO: Create server threads
-    
+
     /** Create admin account **/
     create_bank_account(accounts, admin_password, ADMIN_ACCOUNT_ID, 0);
     int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
@@ -53,32 +90,10 @@ int main(int argc, char *argv[]){
     tlv_request_t request;
     int server_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
 
-    while (operation != OP_SHUTDOWN){
+    while (operation != OP_SHUTDOWN) {
         if (read(server_fifo_fd, &request, sizeof(request)) > 0){
-            /* Log request */
-            int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-            logRequest(server_log_fd, request.value.header.pid, &request);
-            close(server_log_fd);
-
-            /* Verify account and handle request*/
             operation = request.type;
-            char *user_pw = request.value.header.password;
-            uint32_t acc_id = request.value.header.account_id;
-            char hash[HASH_LEN];
-            generate_sha256_hash(user_pw, accounts[acc_id].salt, hash);
-            
-            if (strcmp(hash, accounts[acc_id].hash)){//account validation
-                /**
-                 * ! Temporary
-                 */
-                printf("Wrong user/password\n");
-            }
-            else {
-                /**
-                 *   TODO: Validate, handle and log requests
-                 */
-            }
-
+            read_request((void *) &request);
         }
     }
 
@@ -86,4 +101,4 @@ int main(int argc, char *argv[]){
     remove_fifo(SERVER_FIFO_PATH);
 
     exit(EXIT_SUCCESS);
-} 
+}
