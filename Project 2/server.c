@@ -46,14 +46,35 @@ int main(int argc, char *argv[]){
     /** Server FIFO creation **/
     create_fifo(SERVER_FIFO_PATH);
 
-    /**
-     * TODO: Handle requests to server fifo
-     * TODO: Log thread sync actions to SERVER_LOGFILE
-     * TODO: Log requests to SERVER_LOGFILE
-     * TODO: Reply to the correct user fifo
-     * TODO: Log reply to SERVER_LOGFILE
-     * TODO: Handle all pending requests before exiting when receiving shutdown request
+    /** 
+     * ! Single counter/thread for now 
      */
+    op_type_t operation = 0;
+    tlv_request_t request;
+    int server_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+
+    while (operation != OP_SHUTDOWN){
+        if (read(server_fifo_fd, &request, sizeof(request)) > 0){
+            operation = request.type;
+            char *user_pw = request.value.header.password;
+            uint32_t acc_id = request.value.header.account_id;
+            char hash[HASH_LEN];
+            generate_sha256_hash(user_pw, accounts[acc_id].salt, hash);
+            
+            if (strcmp(hash, accounts[acc_id].hash)){//account validation
+                /**
+                 * ! Temporary
+                 */
+                printf("Wrong user/password\n");
+            }
+            else {
+                /**
+                 *   TODO: Validate, handle and log requests
+                 */
+            }
+
+        }
+    }
 
     /* Server FIFO removal */
     remove_fifo(SERVER_FIFO_PATH);

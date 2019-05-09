@@ -25,7 +25,6 @@ int main(int argc, char *argv[]){
     }
     
     /** Build request struct **/
-    char* arguments = argv[5];
     tlv_request_t request;
     if (!build_tlv_request(&request, argv))
         exit(EXIT_FAILURE);
@@ -46,7 +45,8 @@ int main(int argc, char *argv[]){
         printf("Server is not available\n");
         exit(EXIT_FAILURE);
     }
-    write(server_fifo_fd, arguments, strlen(arguments));
+
+    write(server_fifo_fd, &request, sizeof(request));
     close (server_fifo_fd);
 
     /** Wait for server response **/ 

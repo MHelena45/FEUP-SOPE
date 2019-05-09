@@ -47,6 +47,7 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
         case OP_TRANSFER: {
             if (argc < 2){
                 printf("To transfer funds an account id and amount are needed\n");
+                free(args);
                 return false;
             }
             request->value.transfer.account_id = atoi(args[0]);
@@ -55,6 +56,7 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
         }
         default: break;
     }
+    free (args);
     return true;
 }
 
