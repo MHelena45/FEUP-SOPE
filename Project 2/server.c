@@ -15,42 +15,24 @@
 bank_account_t accounts[MAX_BANK_ACCOUNTS];
 
 void read_request(void *req){
-
     tlv_request_t *request = (tlv_request_t *) req;
-
     /* Log request */
-    int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-    logRequest(server_log_fd, request->value.header.pid, request);
-    close(server_log_fd);
-
+    log_request(SERVER_LOGFILE, request);
     /* Verify account and handle request*/
-    char *user_pw = request->value.header.password;
-    uint32_t acc_id = request->value.header.account_id;
-    char hash[HASH_LEN];
-    generate_sha256_hash(user_pw, accounts[acc_id].salt, hash);
-
-    if (strcmp(hash, accounts[acc_id].hash)) { //account validation
-        /**
-         * ! Temporary
-         */
-        printf("Wrong user/password\n");
+    if (validate_bank_account(accounts, &request->value.header)){
+        printf("Wrong user/password\n"); //TODO: Handle wrong user/password
     }
     else{
         tlv_reply_t reply;
-        handle_request(request, accounts, &reply); //TODO
-
+        handle_tlv_request(request, accounts, &reply); //TODO
         //User Reply
             //TODO
-
         //Log reply
-        int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-        logReply(server_log_fd, request->value.header.pid, &reply);
-        close(server_log_fd);
+        log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
     }
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 
     /** Verify command **/
     if (argc < 3){
@@ -67,38 +49,29 @@ int main(int argc, char *argv[])
         printf("Password needs to have between %d and %d characters\n", MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
         exit(EXIT_FAILURE);
     }
-
     /** Initiate random seed **/
     srand(time(NULL));
-
     /** Initiate threads**/
     pthread_t threads[threads_number]; //TODO: Create server threads
-
     /** Create admin account **/
     create_bank_account(accounts, admin_password, ADMIN_ACCOUNT_ID, 0);
-    int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-    logAccountCreation(server_log_fd, 0, &accounts[ADMIN_ACCOUNT_ID]);
-    close(server_log_fd);
+    log_account_creation(SERVER_LOGFILE, MAIN_THREAD_ID, &accounts[ADMIN_ACCOUNT_ID]);
 
     /** Server FIFO creation **/
     create_fifo(SERVER_FIFO_PATH);
-
     /** 
      * ! Single counter/thread for now 
      */
     op_type_t operation = 0;
     tlv_request_t request;
-    int server_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
-
+    int server_fifo_fd = open_fifo(SERVER_FIFO_PATH, O_RDONLY);
     while (operation != OP_SHUTDOWN) {
         if (read(server_fifo_fd, &request, sizeof(request)) > 0){
             operation = request.type;
             read_request((void *) &request);
         }
     }
-
     /* Server FIFO removal */
     remove_fifo(SERVER_FIFO_PATH);
-
     exit(EXIT_SUCCESS);
 }

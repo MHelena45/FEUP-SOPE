@@ -30,9 +30,7 @@ int main(int argc, char *argv[]){
         exit(EXIT_FAILURE);
     
     /** Log Request **/
-    int user_log_fd = open(USER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-    logRequest(user_log_fd, request.value.header.pid, &request);
-    close(user_log_fd);
+    log_request(USER_LOGFILE, &request);
     
     /** Create user FIFO **/
     char fifo_path[USER_FIFO_PATH_LEN];
@@ -40,14 +38,9 @@ int main(int argc, char *argv[]){
     create_fifo(fifo_path);
     
     /** Write request to server fifo **/
-    int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY);
-    if (server_fifo_fd == -1){
-        printf("Server is not available\n");
-        exit(EXIT_FAILURE);
-    }
-
+    int server_fifo_fd = open_fifo(SERVER_FIFO_PATH, O_WRONLY);
     write(server_fifo_fd, &request, sizeof(request));
-    close (server_fifo_fd);
+    close(server_fifo_fd);
 
     /** Wait for server response **/ 
     clock_t start_t = clock();

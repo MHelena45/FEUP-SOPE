@@ -3,9 +3,9 @@
 #include "types.h"
 #include "sope.h"
 
-
-bool build_tlv_request(tlv_request_t *request, char*argv[]);
-
 bool create_bank_account (bank_account_t acc[], char*password, int acc_id, int balance);
+bool validate_bank_account (bank_account_t accounts[], req_header_t *header);
+bool build_tlv_request(tlv_request_t *request, char*argv[]);
+void handle_tlv_request (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply);
 
-void handle_request (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply);
+

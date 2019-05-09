@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <string.h> 
 #include <errno.h>
 #include <time.h>
@@ -22,6 +23,15 @@ void remove_fifo (char *fifo_name){
         printf("Error when destroying FIFO '%s'\n", fifo_name);
         exit(EXIT_FAILURE);
     }
+}
+
+int open_fifo(char *fifo_name, int oflag){
+    int server_fifo_fd = open(fifo_name, oflag);
+    if (server_fifo_fd == -1){
+        printf("fifo '%s' is not available\n", fifo_name);
+        exit(EXIT_FAILURE);
+    }
+    return server_fifo_fd;
 }
 
 void run_pipe_command(char *command ,char *result) {
@@ -74,4 +84,22 @@ void generate_password_salt(char salt[]){
         sprintf(&salt[i], "%x", randomValue);
     }
     salt[SALT_LEN] = '\0';
+}
+
+void log_request(char *log_filename, tlv_request_t *request){
+    int user_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
+    logRequest(user_log_fd, request->value.header.pid, request);
+    close(user_log_fd);
+}
+
+void log_account_creation(char *log_filename, int id, bank_account_t *account){
+    int server_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
+    logAccountCreation(server_log_fd, id, account);
+    close(server_log_fd);
+}
+
+void log_reply(char *log_filename, int id, tlv_reply_t *reply){
+    int server_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
+    logReply(server_log_fd, id, reply);
+    close(server_log_fd);
 }

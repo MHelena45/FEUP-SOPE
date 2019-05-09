@@ -6,6 +6,7 @@
 #include "banking_aux.h"
 #include "general_aux.h"
 
+
 bool create_bank_account (bank_account_t acc[], char*password, int acc_id, int balance){
     if (strlen(acc[acc_id].hash) != 0)
         return false;
@@ -14,6 +15,14 @@ bool create_bank_account (bank_account_t acc[], char*password, int acc_id, int b
     generate_password_salt(acc[acc_id].salt);
     generate_sha256_hash(password, acc[acc_id].salt, acc[acc_id].hash);
     return true;
+}
+
+bool validate_bank_account (bank_account_t accounts[], req_header_t *header){
+    char hash[HASH_LEN];
+    generate_sha256_hash(header->password, accounts[header->account_id].salt, hash);
+    if (strcmp(hash, accounts[header->account_id].hash)) 
+        return false;
+    else return true;
 }
 
 bool build_tlv_request(tlv_request_t *request, char*argv[]){
@@ -63,7 +72,7 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
     return true;
 }
 
-void handle_request (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply){
+void handle_tlv_request (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply){
 
     switch(request->type){
         case OP_CREATE_ACCOUNT: {
