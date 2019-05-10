@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <time.h>
 
@@ -14,25 +15,38 @@
 
 bank_account_t accounts[MAX_BANK_ACCOUNTS];
 
+void exit_handler(){
+    struct stat server_fifo;
+    if (stat (SERVER_FIFO_PATH, &server_fifo) == 0){
+        remove_fifo(SERVER_FIFO_PATH);
+    }
+}
+
 void read_request(void *req){
     tlv_request_t *request = (tlv_request_t *) req;
     log_request(SERVER_LOGFILE, request);
 
     tlv_reply_t reply;
     build_tlv_reply(request, accounts, &reply);
-    log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
 
     char fifo_path[USER_FIFO_PATH_LEN];
     get_user_fifo_path(request->value.header.pid, fifo_path);
     int user_fifo_fd = open(fifo_path, O_WRONLY);
-    if (user_fifo_fd == -1)
+    if (user_fifo_fd == -1){
         reply.value.header.ret_code = RC_USR_DOWN;
+        log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
+        return;
+    }
 
+    log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
     write(user_fifo_fd, &reply, sizeof(reply));
     close (user_fifo_fd);
+    memset(&reply, 0, sizeof(reply));
 }
 
 int main(int argc, char *argv[]){
+    /** Initiate exit handler **/
+    atexit(exit_handler);
 
     /** Verify command **/
     if (argc < 3){
@@ -80,7 +94,6 @@ int main(int argc, char *argv[]){
             read_request((void *) &request);
         }
     }
-    /* Server FIFO removal */
-    remove_fifo(SERVER_FIFO_PATH);
+    close(server_fifo_fd);
     exit(EXIT_SUCCESS);
 }

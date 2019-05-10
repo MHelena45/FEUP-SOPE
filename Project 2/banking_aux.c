@@ -88,12 +88,12 @@ void build_tlv_reply (tlv_request_t *request, bank_account_t accounts[], tlv_rep
     if (reply->value.header.ret_code == RC_OK){
         switch(request->type){
             case OP_CREATE_ACCOUNT: {
-                /** If user is not admin **/
+                /** If user is not admin, OP_NALLOW **/
                 if (request->value.header.account_id != ADMIN_ACCOUNT_ID){
                     reply->value.header.ret_code = RC_OP_NALLOW;
                     break;
                 }
-                /** If Account already exists **/
+                /** If Account already exists, ID_IN_USE **/
                 if (is_active_account(accounts, request->value.create.account_id)){
                     reply->value.header.ret_code = RC_ID_IN_USE;
                     break;
@@ -103,11 +103,59 @@ void build_tlv_reply (tlv_request_t *request, bank_account_t accounts[], tlv_rep
                 break;
             }
             case OP_BALANCE: {
-
+                /** If user is admin, OP_NALLOW **/
+                if (request->value.header.account_id == ADMIN_ACCOUNT_ID){
+                    reply->value.header.ret_code = RC_OP_NALLOW;
+                    break;
+                }
+                /** If Account doesn't exist, ID_NOT_FOUND **/
+                if (!is_active_account(accounts, request->value.create.account_id)){
+                    reply->value.header.ret_code = RC_ID_NOT_FOUND;
+                    break;
+                }
+                reply->value.balance.balance = accounts[reply->value.header.account_id].balance;
                 break;
             }
             case OP_TRANSFER: {
+                reply->value.transfer.balance = accounts[request->value.header.account_id].balance;
+                
+                /** If origin and destination are the same, SAME_ID **/
+                if (request->value.header.account_id == request->value.transfer.account_id){
+                    reply->value.header.ret_code = RC_SAME_ID;
+                    break;
+                }
+                /** If user is admin, OP_NALLOW **/
+                if (request->value.header.account_id == ADMIN_ACCOUNT_ID){
+                    reply->value.header.ret_code = RC_OP_NALLOW;
+                    break;
+                }
+                /** If target is admin, OP_NALLOW **/
+                if (request->value.transfer.account_id == ADMIN_ACCOUNT_ID){
+                    reply->value.header.ret_code = RC_OP_NALLOW;
+                    break;
+                }
+                /** If target account doesn't exist, ID_NOT_FOUND **/
+                if (!is_active_account(accounts, request->value.transfer.account_id)){
+                    reply->value.header.ret_code = RC_ID_NOT_FOUND;
+                    break;
+                }
 
+                uint32_t *source_balance = &accounts[request->value.header.account_id].balance;
+                uint32_t *dest_balance = &accounts[request->value.transfer.account_id].balance;
+
+                if ((int)(*source_balance - request->value.transfer.amount) < (int)MIN_BALANCE){
+                    reply->value.header.ret_code = RC_NO_FUNDS;
+                    break;
+                }
+                
+                if (*dest_balance + request->value.transfer.amount > MAX_BALANCE){
+                    reply->value.header.ret_code = RC_TOO_HIGH;
+                    break;
+                }
+
+                *dest_balance += request->value.transfer.amount;
+                *source_balance -= request->value.transfer.amount;
+                reply->value.transfer.balance = accounts[request->value.header.account_id].balance;
                 break;
             }
             case OP_SHUTDOWN: {
