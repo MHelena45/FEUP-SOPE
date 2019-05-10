@@ -6,23 +6,31 @@
 #include "banking_aux.h"
 #include "general_aux.h"
 
-
-bool create_bank_account (bank_account_t acc[], char*password, int acc_id, int balance){
-    if (strlen(acc[acc_id].hash) != 0)
+bool is_active_account(bank_account_t acc[], int acc_id){
+    if (strlen(acc[acc_id].hash) == 0)
         return false;
-    acc[acc_id].account_id = acc_id;
-    acc[acc_id].balance = balance;
-    generate_password_salt(acc[acc_id].salt);
-    generate_sha256_hash(password, acc[acc_id].salt, acc[acc_id].hash);
     return true;
 }
 
-bool validate_bank_account (bank_account_t accounts[], req_header_t *header){
+bool create_bank_account (bank_account_t acc[], req_create_account_t *acc_data){
+    int acc_id = acc_data->account_id;
+    if (is_active_account(acc, acc_id))
+        return false;
+    acc[acc_id].account_id = acc_id;
+    acc[acc_id].balance = acc_data->balance;
+    generate_password_salt(acc[acc_id].salt);
+    generate_sha256_hash(acc_data->password, acc[acc_id].salt, acc[acc_id].hash);
+    return true;
+}
+
+enum ret_code validate_bank_account (bank_account_t accounts[], req_header_t *header){
+    if (!is_active_account(accounts, header->account_id))
+        return RC_ID_NOT_FOUND;
     char hash[HASH_LEN];
     generate_sha256_hash(header->password, accounts[header->account_id].salt, hash);
-    if (strcmp(hash, accounts[header->account_id].hash)) 
-        return false;
-    else return true;
+    if (strcmp(hash, accounts[header->account_id].hash) != 0)
+        return RC_LOGIN_FAIL;
+    return RC_OK;
 }
 
 bool build_tlv_request(tlv_request_t *request, char*argv[]){
@@ -72,32 +80,47 @@ bool build_tlv_request(tlv_request_t *request, char*argv[]){
     return true;
 }
 
-void handle_tlv_request (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply){
+void build_tlv_reply (tlv_request_t *request, bank_account_t accounts[], tlv_reply_t *reply){
+    reply->type = request->type;
+    reply->value.header.account_id = request->value.header.account_id;
+    reply->value.header.ret_code = validate_bank_account(accounts, &request->value.header);
+    
+    if (reply->value.header.ret_code == RC_OK){
+        switch(request->type){
+            case OP_CREATE_ACCOUNT: {
+                /** If user is not admin **/
+                if (request->value.header.account_id != ADMIN_ACCOUNT_ID){
+                    reply->value.header.ret_code = RC_OP_NALLOW;
+                    break;
+                }
+                /** If Account already exists **/
+                if (is_active_account(accounts, request->value.create.account_id)){
+                    reply->value.header.ret_code = RC_ID_IN_USE;
+                    break;
+                }
+                /** Create account **/
+                create_bank_account(accounts, &request->value.create);
+                break;
+            }
+            case OP_BALANCE: {
 
-    switch(request->type){
-        case OP_CREATE_ACCOUNT: {
-            //Verify if request account id is ADMIN_ACCOUNT_ID   
-            // create_bank_accout returns true if account creation was possible false otherwise
-            break;
+                break;
+            }
+            case OP_TRANSFER: {
+
+                break;
+            }
+            case OP_SHUTDOWN: {
+                /* If user is not admin */
+                if (request->value.header.account_id != ADMIN_ACCOUNT_ID){
+                    reply->value.header.ret_code = RC_OP_NALLOW;
+                    break;
+                }
+                break;
+            }
+            default:break;
         }
-
-        case OP_BALANCE: {
-
-            break;
-        }
-
-        case OP_TRANSFER: {
-
-            break;
-        }
-
-
-        case OP_SHUTDOWN: {
-            //Verify if request account id is ADMIN_ACCOUNT_ID 
-            break;
-        }
-        default:break;
     }
-
+    reply->length = sizeof(reply);
 }
 

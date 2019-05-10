@@ -25,13 +25,8 @@ void remove_fifo (char *fifo_name){
     }
 }
 
-int open_fifo(char *fifo_name, int oflag){
-    int server_fifo_fd = open(fifo_name, oflag);
-    if (server_fifo_fd == -1){
-        printf("fifo '%s' is not available\n", fifo_name);
-        exit(EXIT_FAILURE);
-    }
-    return server_fifo_fd;
+void get_user_fifo_path(int id, char *fifo_name){
+    sprintf(fifo_name, "%s%0*d",USER_FIFO_PATH_PREFIX, WIDTH_ID, id);
 }
 
 void run_pipe_command(char *command ,char *result) {

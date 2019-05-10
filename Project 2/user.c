@@ -31,28 +31,37 @@ int main(int argc, char *argv[]){
     
     /** Log Request **/
     log_request(USER_LOGFILE, &request);
-    
-    /** Create user FIFO **/
-    char fifo_path[USER_FIFO_PATH_LEN];
-    sprintf(fifo_path, "%s%0*d",USER_FIFO_PATH_PREFIX, WIDTH_ID, request.value.header.pid);
-    create_fifo(fifo_path);
-    
+
     /** Write request to server fifo **/
-    int server_fifo_fd = open_fifo(SERVER_FIFO_PATH, O_WRONLY);
+    int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY);
+    if (server_fifo_fd == -1){
+        printf("fifo '%s' is not available\n", SERVER_FIFO_PATH);
+        exit(EXIT_FAILURE);
+    }
     write(server_fifo_fd, &request, sizeof(request));
     close(server_fifo_fd);
 
+    /** Create user FIFO **/
+    char user_fifo_path[USER_FIFO_PATH_LEN];
+    get_user_fifo_path(request.value.header.pid, user_fifo_path);
+    create_fifo(user_fifo_path);
+    int user_fifo_fd = open(user_fifo_path, O_RDONLY);
+    if (user_fifo_fd == -1){
+        printf("fifo '%s' is not available\n", user_fifo_path);
+        exit(EXIT_FAILURE);
+    }
+
     /** Wait for server response **/ 
     clock_t start_t = clock();
+    tlv_reply_t reply;
     while ( ((double)(clock()-start_t) / CLOCKS_PER_SEC) < FIFO_TIMEOUT_SECS){
-        /**
-         * TODO: Check for server response
-         * TODO: Log server response
-         */
+        if (read(user_fifo_fd, &reply, sizeof(reply)) > 0){
+            log_reply(USER_LOGFILE, request.value.header.pid, &reply);
+            break;
+        }
     } 
 
-    /** Remove user FIFO **/
-    remove_fifo(fifo_path);
-
+    /** Cleanup **/
+    remove_fifo(user_fifo_path);
     exit(EXIT_SUCCESS);
 } 
