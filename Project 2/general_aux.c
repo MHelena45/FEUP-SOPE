@@ -30,7 +30,6 @@ void get_user_fifo_path(int id, char *fifo_name){
 }
 
 void run_pipe_command(char *command ,char *result) {
-    int pipeStatus;
     FILE *fpout;
     fpout = popen(command, "r");
     if (fpout == NULL) {
@@ -38,17 +37,14 @@ void run_pipe_command(char *command ,char *result) {
         exit(EXIT_FAILURE);
     }
     fgets(result, MAXLINE, fpout);
-    pipeStatus = pclose(fpout);
-    if(pipeStatus == -1) {
+    if(pclose(fpout) == -1) {
         fprintf(stderr, "Error closing pipe");
     }
 }
 
 bool is_valid_password(char *password){
-    if (strlen(password) < MIN_PASSWORD_LEN)
+    if (strlen(password) < MIN_PASSWORD_LEN || strlen(password) > MAX_PASSWORD_LEN)
         return false;    
-    if (strlen(password) > MAX_PASSWORD_LEN)
-        return false;
     return true;
 }
 
