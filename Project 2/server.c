@@ -18,6 +18,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bank_account_t accounts[MAX_BANK_ACCOUNTS];
+tlv_request_t request;
 
 void exit_handler(){
     struct stat server_fifo;
@@ -26,13 +27,18 @@ void exit_handler(){
     }
 }
 
-void* read_request(void *req){
-    tlv_request_t *request = (tlv_request_t *) req;
+void* read_request(void *arg){
+    int threadNumber = *(int * ) arg;
     pthread_mutex_lock(&mutex);
-    log_request(SERVER_LOGFILE, request);
+
+    while(!conditionMet)
+    {
+        ptheread_cond_wait(&cond, &mutex);
+    }
+    log_request(SERVER_LOGFILE, &request);
 
     tlv_reply_t reply;
-    build_tlv_reply(request, accounts, &reply);
+    build_tlv_reply(&request, accounts, &reply);
 
     char fifo_path[USER_FIFO_PATH_LEN];
     get_user_fifo_path(request->value.header.pid, fifo_path);
@@ -46,7 +52,7 @@ void* read_request(void *req){
     log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
     write(user_fifo_fd, &reply, sizeof(reply));
     close (user_fifo_fd);
-    memset(&reply, 0, sizeof(reply));
+    memset(&reply, 0, si    zeof(reply));
     pthread_mutex_unlock(&mutex);
     return NULL;
 }
@@ -74,6 +80,11 @@ int main(int argc, char *argv[]){
     srand(time(NULL));
     /** Initiate threads**/
     pthread_t threads[threads_number]; //TODO: Create server threads
+    int threadsNumber[threads_number];
+    for( int  i=0; i < threads_number; i++){
+        threadsNumber[i] = i + 1;
+        threads[i] = pthread_create(&threads[i], NULL, read_request, (void *) &threadsNumber[i] );
+    }
     /** Create admin account **/
     req_create_account_t admin_account;
     admin_account.account_id = ADMIN_ACCOUNT_ID;
@@ -88,7 +99,7 @@ int main(int argc, char *argv[]){
      * ! Single counter/thread for now 
      */
     op_type_t operation = 0;
-    tlv_request_t request;
+    
     int server_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
     if (server_fifo_fd == -1){
         printf("fifo '%s' is not available\n", SERVER_FIFO_PATH);
@@ -97,8 +108,10 @@ int main(int argc, char *argv[]){
 
     while (operation != OP_SHUTDOWN) {
         if (read(server_fifo_fd, &request, sizeof(request)) > 0){
+            pthread_mutex_lock(&mutex);
             operation = request.type;
             read_request((void *) &request);
+            pthread_mutex_unlock(&mutex);
         }
     }
     close(server_fifo_fd);
