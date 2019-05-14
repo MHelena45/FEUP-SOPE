@@ -1,17 +1,17 @@
 /*   servidor      */
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <pthread.h>
 #include <time.h>
 
 #include "banking_aux.h"
-#include "types.h"
-#include "sope.h"
 #include "constants.h"
 #include "general_aux.h"
+#include "sope.h"
+#include "types.h"
 
 int conditionMet = 0;
 bool servidorOver = 0;
@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
             pthread_mutex_unlock(&mutex);
         }
     }
-    close(server_fifo_fd);
-    exit(EXIT_SUCCESS);
+  }
+  close(server_fifo_fd);
+  exit(EXIT_SUCCESS);
 }
