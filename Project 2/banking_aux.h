@@ -3,6 +3,9 @@
 #include "sope.h"
 #include "types.h"
 
+extern bool server_exit;
+extern int active_threads;
+
 bool is_active_account(bank_account_t acc[], int acc_id);
 bool create_bank_account(bank_account_t acc[], req_create_account_t* acc_data,
                          int id);

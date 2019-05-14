@@ -2,14 +2,6 @@
 #include "sope.h"
 #include "types.h"
 #define MAXLINE 512
-extern bool server_exit;
-extern int active_threads;
-
-typedef struct server_var {
-  bool request_waiting;
-  bool server_exit;
-  int active_threads;
-} __attribute__((packed)) server_var_t;
 
 void create_fifo(char *fifo_name);
 void remove_fifo(char *fifo_name);
