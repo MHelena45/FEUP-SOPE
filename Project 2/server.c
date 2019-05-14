@@ -14,8 +14,11 @@
 #include "sope.h"
 #include "types.h"
 
+#define NOT_SHARED 0
+
 bool request_waiting = false;
-bool server_exit = false;
+extern bool server_exit;
+extern int active_threads;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -38,11 +41,15 @@ void *read_request(void *arg) {
     while (!request_waiting) {
       pthread_cond_wait(&cond, &mutex);
     }
+    usleep(request.value.header.op_delay_ms * 1000);
+
+    if (server_exit) break;
 
     request_waiting = false;
+    ++active_threads;
 
     tlv_reply_t reply;
-    build_tlv_reply(&request, accounts, &reply);
+    build_tlv_reply(&request, accounts, &reply, thread_id);
 
     char fifo_path[USER_FIFO_PATH_LEN];
     get_user_fifo_path(request.value.header.pid, fifo_path);
@@ -52,11 +59,16 @@ void *read_request(void *arg) {
     else
       write(user_fifo_fd, &reply, sizeof(reply));
 
-    log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
+    log_reply(SERVER_LOGFILE, thread_id, &reply);
+    if (reply.type == OP_SHUTDOWN && reply.value.header.ret_code == RC_OK) {
+      server_exit = true;
+    }
+
     memset(&reply, 0, sizeof(reply));
-    close(user_fifo_fd);
+    --active_threads;
     unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
                  request.value.header.pid);
+    close(user_fifo_fd);
   }
   return NULL;
 }
@@ -81,6 +93,7 @@ int main(int argc, char *argv[]) {
            MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
     exit(EXIT_FAILURE);
   }
+
   /** Initiate random seed **/
   srand(time(NULL));
   /** Initiate threads**/
@@ -88,19 +101,18 @@ int main(int argc, char *argv[]) {
   int threadsNumber[threads_number];
   for (int i = 0; i < threads_number; i++) {
     threadsNumber[i] = i + 1;
-    threads[i] = pthread_create(&threads[i], NULL, read_request,
-                                (void *)&threadsNumber[i]);
+    pthread_create(&threads[i], NULL, read_request, (void *)&threadsNumber[i]);
+    log_office_open(threadsNumber[i], threads[i]);
   }
   /** Create admin account **/
   req_create_account_t admin_account;
   admin_account.account_id = ADMIN_ACCOUNT_ID;
   strcpy(admin_account.password, admin_password);
   admin_account.balance = 0;
-  create_bank_account(accounts, &admin_account);
+  create_bank_account(accounts, &admin_account, MAIN_THREAD_ID);
 
   /** Server FIFO creation **/
   create_fifo(SERVER_FIFO_PATH);
-  op_type_t operation = 0;
 
   int server_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
   if (server_fifo_fd == -1) {
@@ -108,18 +120,23 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  while (operation != OP_SHUTDOWN) {
+  while (!server_exit) {
     if (read(server_fifo_fd, &request, sizeof(request)) > 0) {
-      log_request(SERVER_LOGFILE, &request);
+      log_request(SERVER_LOGFILE, MAIN_THREAD_ID, &request);
       lock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
                  request.value.header.pid);
       request_waiting = true;
       signal_cond(&cond, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
                   request.value.header.pid);
-      operation = request.type;
       unlock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
                    request.value.header.pid);
     }
+  }
+  request_waiting = true;
+  pthread_cond_broadcast(&cond);
+  for (int i = 0; i < threads_number; i++) {
+    pthread_join(threads[i], NULL);
+    log_office_close(threadsNumber[i], threads[i]);
   }
 
   close(server_fifo_fd);

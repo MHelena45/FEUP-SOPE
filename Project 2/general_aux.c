@@ -79,48 +79,58 @@ void generate_password_salt(char salt[]) {
   }
   salt[SALT_LEN] = '\0';
 }
+void log_office_open(int id, pthread_t tid) {
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logBankOfficeOpen(log_fd, id, tid);
+  close(log_fd);
+}
+void log_office_close(int id, pthread_t tid) {
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logBankOfficeClose(log_fd, id, tid);
+  close(log_fd);
+}
 
-void log_request(char* log_filename, tlv_request_t* request) {
-  int user_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
-  logRequest(user_log_fd, request->value.header.pid, request);
-  close(user_log_fd);
+void log_request(char* log_filename, int id, tlv_request_t* request) {
+  int log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
+  logRequest(log_fd, id, request);
+  close(log_fd);
 }
 
 void log_account_creation(char* log_filename, int id, bank_account_t* account) {
-  int server_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
-  logAccountCreation(server_log_fd, id, account);
-  close(server_log_fd);
+  int log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
+  logAccountCreation(log_fd, id, account);
+  close(log_fd);
 }
 
 void log_reply(char* log_filename, int id, tlv_reply_t* reply) {
-  int server_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
-  logReply(server_log_fd, id, reply);
-  close(server_log_fd);
+  int log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
+  logReply(log_fd, id, reply);
+  close(log_fd);
 }
 
 void lock_mutex(pthread_mutex_t* mutex, int id, sync_role_t role, int sid) {
   pthread_mutex_lock(mutex);
-  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-  logSyncMech(server_log_fd, id, SYNC_OP_MUTEX_LOCK, role, sid);
-  close(server_log_fd);
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(log_fd, id, SYNC_OP_MUTEX_LOCK, role, sid);
+  close(log_fd);
 }
 
 void unlock_mutex(pthread_mutex_t* mutex, int id, sync_role_t role, int sid) {
   pthread_mutex_unlock(mutex);
-  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-  logSyncMech(server_log_fd, id, SYNC_OP_MUTEX_UNLOCK, role, sid);
-  close(server_log_fd);
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(log_fd, id, SYNC_OP_MUTEX_UNLOCK, role, sid);
+  close(log_fd);
 }
 
 void signal_cond(pthread_cond_t* cond, int id, sync_role_t role, int sid) {
-  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-  logSyncMech(server_log_fd, id, SYNC_OP_COND_SIGNAL, role, sid);
-  close(server_log_fd);
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(log_fd, id, SYNC_OP_COND_SIGNAL, role, sid);
+  close(log_fd);
   pthread_cond_signal(cond);
 }
 
 void log_wait_cond(int id, sync_role_t role, int sid) {
-  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
-  logSyncMech(server_log_fd, id, SYNC_OP_COND_WAIT, role, sid);
-  close(server_log_fd);
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(log_fd, id, SYNC_OP_COND_WAIT, role, sid);
+  close(log_fd);
 }

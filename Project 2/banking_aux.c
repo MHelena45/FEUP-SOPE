@@ -6,19 +6,23 @@
 #include "constants.h"
 #include "general_aux.h"
 
+bool server_exit = false;
+int active_threads = 0;
+
 bool is_active_account(bank_account_t acc[], int acc_id) {
   if (strlen(acc[acc_id].hash) == 0) return false;
   return true;
 }
 
-bool create_bank_account(bank_account_t acc[], req_create_account_t *acc_data) {
+bool create_bank_account(bank_account_t acc[], req_create_account_t *acc_data,
+                         int id) {
   int acc_id = acc_data->account_id;
   if (is_active_account(acc, acc_id)) return false;
   acc[acc_id].account_id = acc_id;
   acc[acc_id].balance = acc_data->balance;
   generate_password_salt(acc[acc_id].salt);
   generate_sha256_hash(acc_data->password, acc[acc_id].salt, acc[acc_id].hash);
-  log_account_creation(SERVER_LOGFILE, MAIN_THREAD_ID, &acc[ADMIN_ACCOUNT_ID]);
+  log_account_creation(SERVER_LOGFILE, id, &acc[ADMIN_ACCOUNT_ID]);
   return true;
 }
 
@@ -83,7 +87,7 @@ bool build_tlv_request(tlv_request_t *request, char *argv[]) {
 }
 
 void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
-                     tlv_reply_t *reply) {
+                     tlv_reply_t *reply, int id) {
   reply->type = request->type;
   reply->value.header.account_id = request->value.header.account_id;
   reply->value.header.ret_code =
@@ -103,7 +107,7 @@ void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
           break;
         }
         /** Create account **/
-        create_bank_account(accounts, &request->value.create);
+        create_bank_account(accounts, &request->value.create, id);
         break;
       }
       case OP_BALANCE: {
@@ -175,6 +179,7 @@ void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
           reply->value.header.ret_code = RC_OP_NALLOW;
           break;
         }
+        reply->value.shutdown.active_offices = active_threads;
         break;
       }
       default:

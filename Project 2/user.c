@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
   reply.value.header.account_id = request.value.header.account_id;
 
   /** Log Request **/
-  log_request(USER_LOGFILE, &request);
+  log_request(USER_LOGFILE, request.value.header.pid, &request);
 
   /** Write request to server fifo **/
   int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY);
