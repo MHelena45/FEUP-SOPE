@@ -13,6 +13,10 @@
 #include "constants.h"
 #include "general_aux.h"
 
+int conditionMet = 0;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 bank_account_t accounts[MAX_BANK_ACCOUNTS];
 
 void exit_handler(){
@@ -22,8 +26,9 @@ void exit_handler(){
     }
 }
 
-void read_request(void *req){
+void* read_request(void *req){
     tlv_request_t *request = (tlv_request_t *) req;
+    pthread_mutex_lock(&mutex);
     log_request(SERVER_LOGFILE, request);
 
     tlv_reply_t reply;
@@ -35,13 +40,15 @@ void read_request(void *req){
     if (user_fifo_fd == -1){
         reply.value.header.ret_code = RC_USR_DOWN;
         log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
-        return;
+        return NULL;
     }
 
     log_reply(SERVER_LOGFILE, MAIN_THREAD_ID, &reply);
     write(user_fifo_fd, &reply, sizeof(reply));
     close (user_fifo_fd);
     memset(&reply, 0, sizeof(reply));
+    pthread_mutex_unlock(&mutex);
+    return NULL;
 }
 
 int main(int argc, char *argv[]){
