@@ -18,11 +18,12 @@ bool create_bank_account(bank_account_t acc[], req_create_account_t *acc_data) {
   acc[acc_id].balance = acc_data->balance;
   generate_password_salt(acc[acc_id].salt);
   generate_sha256_hash(acc_data->password, acc[acc_id].salt, acc[acc_id].hash);
+  log_account_creation(SERVER_LOGFILE, MAIN_THREAD_ID, &acc[ADMIN_ACCOUNT_ID]);
   return true;
 }
 
-enum ret_code validate_bank_account(bank_account_t accounts[],
-                                    req_header_t *header) {
+ret_code_t validate_bank_account(bank_account_t accounts[],
+                                 req_header_t *header) {
   if (!is_active_account(accounts, header->account_id)) return RC_ID_NOT_FOUND;
   char hash[HASH_LEN];
   generate_sha256_hash(header->password, accounts[header->account_id].salt,

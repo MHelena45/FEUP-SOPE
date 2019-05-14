@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,25 +31,24 @@ void get_user_fifo_path(int id, char* fifo_name) {
   sprintf(fifo_name, "%s%0*d", USER_FIFO_PATH_PREFIX, WIDTH_ID, id);
 }
 
-
-void run_pipe_command(char *command ,char *result) {
-    FILE *fpout;
-    fpout = popen(command, "r");
-    if (fpout == NULL) {
-        fprintf(stderr, "Error opening pipe");
-        exit(EXIT_FAILURE);
-    }
-    fgets(result, MAXLINE, fpout);
-    if(pclose(fpout) == -1) {
-        fprintf(stderr, "Error closing pipe");
-    }
+void run_pipe_command(char* command, char* result) {
+  FILE* fpout;
+  fpout = popen(command, "r");
+  if (fpout == NULL) {
+    fprintf(stderr, "Error opening pipe");
+    exit(EXIT_FAILURE);
+  }
+  fgets(result, MAXLINE, fpout);
+  if (pclose(fpout) == -1) {
+    fprintf(stderr, "Error closing pipe");
+  }
 }
 
-bool is_valid_password(char *password){
-    if (strlen(password) < MIN_PASSWORD_LEN || strlen(password) > MAX_PASSWORD_LEN)
-        return false;    
-    return true;
-
+bool is_valid_password(char* password) {
+  if (strlen(password) < MIN_PASSWORD_LEN ||
+      strlen(password) > MAX_PASSWORD_LEN)
+    return false;
+  return true;
 }
 
 int get_string_arguments(char* arguments, char* argv[]) {
@@ -95,5 +95,32 @@ void log_account_creation(char* log_filename, int id, bank_account_t* account) {
 void log_reply(char* log_filename, int id, tlv_reply_t* reply) {
   int server_log_fd = open(log_filename, O_CREAT | O_WRONLY | O_APPEND);
   logReply(server_log_fd, id, reply);
+  close(server_log_fd);
+}
+
+void lock_mutex(pthread_mutex_t* mutex, int id, sync_role_t role, int sid) {
+  pthread_mutex_lock(mutex);
+  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(server_log_fd, id, SYNC_OP_MUTEX_LOCK, role, sid);
+  close(server_log_fd);
+}
+
+void unlock_mutex(pthread_mutex_t* mutex, int id, sync_role_t role, int sid) {
+  pthread_mutex_unlock(mutex);
+  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(server_log_fd, id, SYNC_OP_MUTEX_UNLOCK, role, sid);
+  close(server_log_fd);
+}
+
+void signal_cond(pthread_cond_t* cond, int id, sync_role_t role, int sid) {
+  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(server_log_fd, id, SYNC_OP_COND_SIGNAL, role, sid);
+  close(server_log_fd);
+  pthread_cond_signal(cond);
+}
+
+void log_wait_cond(int id, sync_role_t role, int sid) {
+  int server_log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMech(server_log_fd, id, SYNC_OP_COND_WAIT, role, sid);
   close(server_log_fd);
 }
