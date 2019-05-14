@@ -30,25 +30,25 @@ void get_user_fifo_path(int id, char* fifo_name) {
   sprintf(fifo_name, "%s%0*d", USER_FIFO_PATH_PREFIX, WIDTH_ID, id);
 }
 
-void run_pipe_command(char* command, char* result) {
-  FILE* fpout;
-  fpout = popen(command, "r");
-  if (fpout == NULL) {
-    fprintf(stderr, "Error opening pipe");
-    exit(EXIT_FAILURE);
-  }
-  fgets(result, MAXLINE, fpout);
-  if (pclose(fpout) == -1) {
-    fprintf(stderr, "Error closing pipe");
-  }
+
+void run_pipe_command(char *command ,char *result) {
+    FILE *fpout;
+    fpout = popen(command, "r");
+    if (fpout == NULL) {
+        fprintf(stderr, "Error opening pipe");
+        exit(EXIT_FAILURE);
+    }
+    fgets(result, MAXLINE, fpout);
+    if(pclose(fpout) == -1) {
+        fprintf(stderr, "Error closing pipe");
+    }
 }
 
-bool is_valid_password(char* password) {
-  int pw_length = strlen(password);
-  if (pw_length < MIN_PASSWORD_LEN || pw_length > MAX_PASSWORD_LEN)
-    return false;
+bool is_valid_password(char *password){
+    if (strlen(password) < MIN_PASSWORD_LEN || strlen(password) > MAX_PASSWORD_LEN)
+        return false;    
+    return true;
 
-  return true;
 }
 
 int get_string_arguments(char* arguments, char* argv[]) {
