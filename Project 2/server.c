@@ -11,6 +11,7 @@
 #include "banking_aux.h"
 #include "constants.h"
 #include "general_aux.h"
+#include "request_queue.h"
 #include "sope.h"
 #include "types.h"
 
@@ -23,7 +24,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bank_account_t accounts[MAX_BANK_ACCOUNTS];
-tlv_request_t request;
+request_queue_t requests;
 
 void exit_handler() {
   struct stat server_fifo;
@@ -41,9 +42,13 @@ void *read_request(void *arg) {
     while (!request_waiting) {
       pthread_cond_wait(&cond, &mutex);
     }
+    if (server_exit) break;
+    
+    tlv_request_t request = requests.front(&requests);
+    requests.pop(&requests);
     usleep(request.value.header.op_delay_ms * 1000);
 
-    if (server_exit) break;
+   
 
     request_waiting = false;
     ++active_threads;
@@ -96,6 +101,7 @@ int main(int argc, char *argv[]) {
 
   /** Initiate random seed **/
   srand(time(NULL));
+  request_queue_init(&requests);
   /** Initiate threads**/
   pthread_t threads[threads_number];  // TODO: Create server threads
   int threadsNumber[threads_number];
@@ -119,10 +125,11 @@ int main(int argc, char *argv[]) {
     printf("fifo '%s' is not available\n", SERVER_FIFO_PATH);
     exit(EXIT_FAILURE);
   }
-
+  tlv_request_t request;
   while (!server_exit) {
     if (read(server_fifo_fd, &request, sizeof(request)) > 0) {
       log_request(SERVER_LOGFILE, MAIN_THREAD_ID, &request);
+      requests.push(&requests, &request);
       lock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
                  request.value.header.pid);
       request_waiting = true;
