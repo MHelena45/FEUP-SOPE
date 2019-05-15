@@ -5,8 +5,7 @@
 #include "banking_aux.h"
 #include "constants.h"
 #include "general_aux.h"
-
-#define NOT_SHARED 0
+#include "semaphore.h"
 
 bool server_exit = false;
 int active_threads = 0;
@@ -16,16 +15,17 @@ bool is_active_account(bank_account_sem_t acc[], int acc_id) {
   return true;
 }
 
-bool create_bank_account(bank_account_sem_t acc[], req_create_account_t *acc_data,
-                         int id) {
+bool create_bank_account(bank_account_sem_t acc[],
+                         req_create_account_t *acc_data, int id) {
   int acc_id = acc_data->account_id;
   if (is_active_account(acc, acc_id)) return false;
   acc[acc_id].bankAccount.account_id = acc_id;
   acc[acc_id].bankAccount.balance = acc_data->balance;
   generate_password_salt(acc[acc_id].bankAccount.salt);
-  generate_sha256_hash(acc_data->password, acc[acc_id].bankAccount.salt, acc[acc_id].bankAccount.hash);
+  generate_sha256_hash(acc_data->password, acc[acc_id].bankAccount.salt,
+                       acc[acc_id].bankAccount.hash);
   log_account_creation(SERVER_LOGFILE, id, &acc[ADMIN_ACCOUNT_ID].bankAccount);
-  sem_init(&acc[acc_id].semaphore, NOT_SHARED, 0);
+  init_sem(&acc[acc_id].semaphore, id, SYNC_ROLE_ACCOUNT, acc_id, 1);
   return true;
 }
 
@@ -33,8 +33,8 @@ ret_code_t validate_bank_account(bank_account_sem_t accounts[],
                                  req_header_t *header) {
   if (!is_active_account(accounts, header->account_id)) return RC_ID_NOT_FOUND;
   char hash[HASH_LEN];
-  generate_sha256_hash(header->password, accounts[header->account_id].bankAccount.salt,
-                       hash);
+  generate_sha256_hash(header->password,
+                       accounts[header->account_id].bankAccount.salt, hash);
   if (strcmp(hash, accounts[header->account_id].bankAccount.hash) != 0)
     return RC_LOGIN_FAIL;
   return RC_OK;

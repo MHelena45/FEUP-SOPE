@@ -15,8 +15,8 @@
 #include "sope.h"
 #include "types.h"
 
-
 bool request_waiting = false;
+uint32_t shutdown_delay_ms;
 extern bool server_exit;
 extern int active_threads;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
@@ -34,7 +34,7 @@ void exit_handler() {
 
 void *read_request(void *arg) {
   int thread_id = *(int *)arg;
-
+  /** Wait for signal **/
   while (!server_exit) {
     lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, MAIN_THREAD_ID);
     log_wait_cond(thread_id, SYNC_ROLE_CONSUMER, MAIN_THREAD_ID);
@@ -42,32 +42,59 @@ void *read_request(void *arg) {
       pthread_cond_wait(&cond, &mutex);
     }
     if (server_exit) break;
-    
+
+    /** Get request from the request queue and mark thread as active **/
     tlv_request_t request = requests.front(&requests);
     requests.pop(&requests);
-    usleep(request.value.header.op_delay_ms * 1000);
 
     request_waiting = false;
     ++active_threads;
 
     tlv_reply_t reply;
-    sem_wait(&accounts[request.value.header.account_id].semaphore);
-    build_tlv_reply(&request, accounts, &reply, thread_id);
-    sem_post(&accounts[request.value.header.account_id].semaphore);
+    sem_t *acc_sem, *target_sem;
+    acc_sem = &accounts[request.value.header.account_id].semaphore;
 
-    char fifo_path[USER_FIFO_PATH_LEN];
-    get_user_fifo_path(request.value.header.pid, fifo_path);
-    int user_fifo_fd = open(fifo_path, O_WRONLY);
+    /** Wait for access to requesting account and apply delay **/
+    wait_sem(acc_sem, thread_id, SYNC_ROLE_ACCOUNT,
+             request.value.header.account_id);
+    sync_delay(thread_id, request.value.header.account_id,
+               request.value.header.op_delay_ms);
+
+    /** Wait for access to target account if transfer and apply delay **/
+    if (request.type == OP_TRANSFER) {
+      target_sem = &accounts[request.value.transfer.account_id].semaphore;
+      wait_sem(target_sem, thread_id, SYNC_ROLE_ACCOUNT,
+               request.value.transfer.account_id);
+      sync_delay(thread_id, request.value.transfer.account_id,
+                 request.value.header.op_delay_ms);
+    }
+    /** Handle request and build tlv_reply_t **/
+    build_tlv_reply(&request, accounts, &reply, thread_id);
+
+    /** Unlock accounts **/
+    post_sem(acc_sem, thread_id, SYNC_ROLE_ACCOUNT,
+             request.value.header.account_id);
+    if (request.type == OP_TRANSFER)
+      post_sem(target_sem, thread_id, SYNC_ROLE_ACCOUNT,
+               request.value.transfer.account_id);
+
+    /** Write to user fifo if available **/
+    int user_fifo_fd = open_user_fifo(request.value.header.pid, O_WRONLY);
     if (user_fifo_fd == -1)
       reply.value.header.ret_code = RC_USR_DOWN;
     else
       write(user_fifo_fd, &reply, sizeof(reply));
 
+    /** Log reply **/
     log_reply(SERVER_LOGFILE, thread_id, &reply);
+
+    /** Get program ready to shutdown if shutdown command is sucessful **/
     if (reply.type == OP_SHUTDOWN && reply.value.header.ret_code == RC_OK) {
+      shutdown_delay_ms = request.value.header.op_delay_ms;
       server_exit = true;
     }
 
+    /** Reset thread  **/
     memset(&reply, 0, sizeof(reply));
     --active_threads;
     unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
@@ -138,6 +165,7 @@ int main(int argc, char *argv[]) {
                    request.value.header.pid);
     }
   }
+  shutdown_delay(shutdown_delay_ms);
   request_waiting = true;
   pthread_cond_broadcast(&cond);
   for (int i = 0; i < threads_number; i++) {

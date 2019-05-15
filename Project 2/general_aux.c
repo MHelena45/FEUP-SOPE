@@ -10,10 +10,12 @@
 #include "constants.h"
 #include "general_aux.h"
 
+#define NOT_SHARED 0
+
 void create_fifo(char* fifo_name) {
   if (mkfifo(fifo_name, 0660) < 0) {
     if (errno == EEXIST)
-      printf("FIFO '%s' already exists\n", fifo_name);
+      remove_fifo(fifo_name);
     else
       printf("Can't create FIFO '%s'\n", fifo_name);
     exit(EXIT_FAILURE);
@@ -27,8 +29,13 @@ void remove_fifo(char* fifo_name) {
   }
 }
 
-void get_user_fifo_path(int id, char* fifo_name) {
-  sprintf(fifo_name, "%s%0*d", USER_FIFO_PATH_PREFIX, WIDTH_ID, id);
+int open_user_fifo(pid_t pid, int flag) {
+  char fifo_path[USER_FIFO_PATH_LEN];
+  sprintf(fifo_path, "%s%0*d", USER_FIFO_PATH_PREFIX, WIDTH_ID, (int)pid);
+  return open(fifo_path, flag);
+}
+void get_user_fifo_path(pid_t pid, char* fifo_path) {
+  sprintf(fifo_path, "%s%0*d", USER_FIFO_PATH_PREFIX, WIDTH_ID, (int)pid);
 }
 
 void run_pipe_command(char* command, char* result) {
@@ -64,7 +71,8 @@ int get_string_arguments(char* arguments, char* argv[]) {
 
 void generate_sha256_hash(char* password, char salt[], char hash[]) {
   char sha256sum_command[MAXLINE];
-  sprintf(sha256sum_command, "echo -n \"%s%s\" | shasum -a 256", password, salt);
+  sprintf(sha256sum_command, "echo -n \"%s%s\" | shasum -a 256", password,
+          salt);
   char pipe_result[MAXLINE];
   run_pipe_command(sha256sum_command, pipe_result);
   char* temp_ptr = strtok(pipe_result, " ");
@@ -133,4 +141,43 @@ void log_wait_cond(int id, sync_role_t role, int sid) {
   int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
   logSyncMech(log_fd, id, SYNC_OP_COND_WAIT, role, sid);
   close(log_fd);
+}
+
+void init_sem(sem_t* sem, int id, sync_role_t role, int sid, int val) {
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMechSem(log_fd, id, SYNC_OP_SEM_INIT, role, sid, val);
+  close(log_fd);
+  sem_init(sem, NOT_SHARED, val);
+}
+
+void wait_sem(sem_t* sem, int id, sync_role_t role, int sid) {
+  int sem_val;
+  sem_getvalue(sem, &sem_val);
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMechSem(log_fd, id, SYNC_OP_SEM_WAIT, role, sid, sem_val);
+  close(log_fd);
+  sem_wait(sem);
+}
+
+void post_sem(sem_t* sem, int id, sync_role_t role, int sid) {
+  int sem_val;
+  sem_getvalue(sem, &sem_val);
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncMechSem(log_fd, id, SYNC_OP_SEM_POST, role, sid, sem_val);
+  close(log_fd);
+  sem_post(sem);
+}
+
+void sync_delay(int id, int sid, uint32_t delay_ms) {
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logSyncDelay(log_fd, id, sid, delay_ms);
+  close(log_fd);
+  usleep(delay_ms * 1000);
+}
+
+void shutdown_delay(uint32_t delay_ms) {
+  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND);
+  logDelay(log_fd, MAIN_THREAD_ID, delay_ms);
+  close(log_fd);
+  usleep(delay_ms * 1000);
 }
