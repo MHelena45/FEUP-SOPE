@@ -6,33 +6,36 @@
 #include "constants.h"
 #include "general_aux.h"
 
+#define NOT_SHARED 0
+
 bool server_exit = false;
 int active_threads = 0;
 
-bool is_active_account(bank_account_t acc[], int acc_id) {
-  if (strlen(acc[acc_id].hash) == 0) return false;
+bool is_active_account(bank_account_sem_t acc[], int acc_id) {
+  if (strlen(acc[acc_id].bankAccount.hash) == 0) return false;
   return true;
 }
 
-bool create_bank_account(bank_account_t acc[], req_create_account_t *acc_data,
+bool create_bank_account(bank_account_sem_t acc[], req_create_account_t *acc_data,
                          int id) {
   int acc_id = acc_data->account_id;
   if (is_active_account(acc, acc_id)) return false;
-  acc[acc_id].account_id = acc_id;
-  acc[acc_id].balance = acc_data->balance;
-  generate_password_salt(acc[acc_id].salt);
-  generate_sha256_hash(acc_data->password, acc[acc_id].salt, acc[acc_id].hash);
-  log_account_creation(SERVER_LOGFILE, id, &acc[ADMIN_ACCOUNT_ID]);
+  acc[acc_id].bankAccount.account_id = acc_id;
+  acc[acc_id].bankAccount.balance = acc_data->balance;
+  generate_password_salt(acc[acc_id].bankAccount.salt);
+  generate_sha256_hash(acc_data->password, acc[acc_id].bankAccount.salt, acc[acc_id].bankAccount.hash);
+  log_account_creation(SERVER_LOGFILE, id, &acc[ADMIN_ACCOUNT_ID].bankAccount);
+  sem_init(&acc[acc_id].semaphore, NOT_SHARED, 0);
   return true;
 }
 
-ret_code_t validate_bank_account(bank_account_t accounts[],
+ret_code_t validate_bank_account(bank_account_sem_t accounts[],
                                  req_header_t *header) {
   if (!is_active_account(accounts, header->account_id)) return RC_ID_NOT_FOUND;
   char hash[HASH_LEN];
-  generate_sha256_hash(header->password, accounts[header->account_id].salt,
+  generate_sha256_hash(header->password, accounts[header->account_id].bankAccount.salt,
                        hash);
-  if (strcmp(hash, accounts[header->account_id].hash) != 0)
+  if (strcmp(hash, accounts[header->account_id].bankAccount.hash) != 0)
     return RC_LOGIN_FAIL;
   return RC_OK;
 }
@@ -86,7 +89,7 @@ bool build_tlv_request(tlv_request_t *request, char *argv[]) {
   return true;
 }
 
-void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
+void build_tlv_reply(tlv_request_t *request, bank_account_sem_t accounts[],
                      tlv_reply_t *reply, int id) {
   reply->type = request->type;
   reply->value.header.account_id = request->value.header.account_id;
@@ -122,12 +125,12 @@ void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
           break;
         }
         reply->value.balance.balance =
-            accounts[reply->value.header.account_id].balance;
+            accounts[reply->value.header.account_id].bankAccount.balance;
         break;
       }
       case OP_TRANSFER: {
         reply->value.transfer.balance =
-            accounts[request->value.header.account_id].balance;
+            accounts[request->value.header.account_id].bankAccount.balance;
 
         /** If origin and destination are the same, SAME_ID **/
         if (request->value.header.account_id ==
@@ -152,9 +155,9 @@ void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
         }
 
         uint32_t *source_balance =
-            &accounts[request->value.header.account_id].balance;
+            &accounts[request->value.header.account_id].bankAccount.balance;
         uint32_t *dest_balance =
-            &accounts[request->value.transfer.account_id].balance;
+            &accounts[request->value.transfer.account_id].bankAccount.balance;
 
         if ((int)(*source_balance - request->value.transfer.amount) <
             (int)MIN_BALANCE) {
@@ -170,7 +173,7 @@ void build_tlv_reply(tlv_request_t *request, bank_account_t accounts[],
         *dest_balance += request->value.transfer.amount;
         *source_balance -= request->value.transfer.amount;
         reply->value.transfer.balance =
-            accounts[request->value.header.account_id].balance;
+            accounts[request->value.header.account_id].bankAccount.balance;
         break;
       }
       case OP_SHUTDOWN: {

@@ -15,7 +15,6 @@
 #include "sope.h"
 #include "types.h"
 
-#define NOT_SHARED 0
 
 bool request_waiting = false;
 extern bool server_exit;
@@ -23,7 +22,7 @@ extern int active_threads;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-bank_account_t accounts[MAX_BANK_ACCOUNTS];
+bank_account_sem_t accounts[MAX_BANK_ACCOUNTS];
 request_queue_t requests;
 
 void exit_handler() {
@@ -48,13 +47,13 @@ void *read_request(void *arg) {
     requests.pop(&requests);
     usleep(request.value.header.op_delay_ms * 1000);
 
-   
-
     request_waiting = false;
     ++active_threads;
 
     tlv_reply_t reply;
+    sem_wait(&accounts[request.value.header.account_id].semaphore);
     build_tlv_reply(&request, accounts, &reply, thread_id);
+    sem_post(&accounts[request.value.header.account_id].semaphore);
 
     char fifo_path[USER_FIFO_PATH_LEN];
     get_user_fifo_path(request.value.header.pid, fifo_path);
