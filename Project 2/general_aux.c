@@ -14,9 +14,10 @@
 
 void create_fifo(char* fifo_name) {
   if (mkfifo(fifo_name, 0660) < 0) {
-    if (errno == EEXIST)
+    if (errno == EEXIST) {
       remove_fifo(fifo_name);
-    else
+      create_fifo(fifo_name);
+    } else
       printf("Can't create FIFO '%s'\n", fifo_name);
     exit(EXIT_FAILURE);
   }
