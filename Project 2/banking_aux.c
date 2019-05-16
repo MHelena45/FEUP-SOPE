@@ -129,8 +129,7 @@ void build_tlv_reply(tlv_request_t *request, bank_account_sem_t accounts[],
         break;
       }
       case OP_TRANSFER: {
-        reply->value.transfer.balance =
-            accounts[request->value.header.account_id].bankAccount.balance;
+        reply->value.transfer.balance = request->value.transfer.amount;
 
         /** If origin and destination are the same, SAME_ID **/
         if (request->value.header.account_id ==
