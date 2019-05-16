@@ -36,11 +36,8 @@ void *read_request(void *arg) {
   /** Wait for signal **/
   while (!server_exit) {
     wait_sem(&main_sem, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
-    // lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
-    if (server_exit) {
-      // unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
-      break;
-    }
+
+    if (server_exit) break;
     /** Get request from the request queue and mark thread as active **/
     lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
     tlv_request_t request = requests.front(&requests);
@@ -85,7 +82,6 @@ void *read_request(void *arg) {
       write(user_fifo_fd, &reply, sizeof(reply));
 
     /** Log reply **/
-
     log_reply(SERVER_LOGFILE, thread_id, &reply);
 
     /** Get program ready to shutdown if shutdown command is sucessful **/
@@ -93,12 +89,9 @@ void *read_request(void *arg) {
       shutdown_delay_ms = request.value.header.op_delay_ms;
       server_exit = true;
     }
-
     /** Reset thread  **/
     memset(&reply, 0, sizeof(reply));
     --active_threads;
-    // unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
-    // request.value.header.pid);
     close(user_fifo_fd);
   }
   return NULL;
@@ -155,7 +148,6 @@ int main(int argc, char *argv[]) {
   tlv_request_t request;
   while (!server_exit) {
     if (read(server_fifo_fd, &request, sizeof(request)) > 0) {
-      log_request(SERVER_LOGFILE, MAIN_THREAD_ID, &request);
       lock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
       requests.push(&requests, &request);
       unlock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_CONSUMER,
@@ -173,7 +165,7 @@ int main(int argc, char *argv[]) {
     pthread_join(threads[i], NULL);
     log_office_close(thread_ids[i], threads[i]);
   }
-
+  sem_destroy(&main_sem);
   close(server_fifo_fd);
   exit(EXIT_SUCCESS);
 }
