@@ -33,8 +33,9 @@ void exit_handler() {
 
 void *read_request(void *arg) {
   int thread_id = *(int *)arg;
-  /** Wait for signal **/
+
   while (!server_exit) {
+    /** Wait for request **/
     wait_sem(&main_sem, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
 
     if (server_exit) break;
@@ -139,12 +140,13 @@ int main(int argc, char *argv[]) {
 
   /** Server FIFO creation **/
   create_fifo(SERVER_FIFO_PATH);
-
   int server_fifo_fd = open(SERVER_FIFO_PATH, O_RDONLY);
   if (server_fifo_fd == -1) {
     printf("fifo '%s' is not available\n", SERVER_FIFO_PATH);
     exit(EXIT_FAILURE);
   }
+
+  /** Read and push requests to the queue **/
   tlv_request_t request;
   while (!server_exit) {
     if (read(server_fifo_fd, &request, sizeof(request)) > 0) {
@@ -157,15 +159,23 @@ int main(int argc, char *argv[]) {
     }
   }
   shutdown_delay(shutdown_delay_ms);
+  /** Let all threads exit **/
   for (int i = 0; i < threads_number; i++) {
     post_sem(&main_sem, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER, ADMIN_ACCOUNT_ID);
   }
-
+  /** Make sure all threads terminate **/
   for (int i = 0; i < threads_number; i++) {
     pthread_join(threads[i], NULL);
     log_office_close(thread_ids[i], threads[i]);
   }
+  /** Destroy semaphores **/
   sem_destroy(&main_sem);
+  for (int i = 0; i < MAX_BANK_ACCOUNTS; ++i) {
+    if (is_active_account(accounts, i)) {
+      sem_destroy(&accounts[i].semaphore);
+    }
+  }
+
   close(server_fifo_fd);
   exit(EXIT_SUCCESS);
 }
