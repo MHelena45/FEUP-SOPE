@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   log_request(USER_LOGFILE, request.value.header.pid, &request);
 
   /** Write request to server fifo **/
-  int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY);
+  int server_fifo_fd = open(SERVER_FIFO_PATH, O_WRONLY | O_NONBLOCK);
   if (server_fifo_fd == -1) {
     reply.value.header.ret_code = RC_SRV_DOWN;
     log_reply(USER_LOGFILE, request.value.header.pid, &reply);
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
   /** Create user FIFO **/
   get_user_fifo_path(request.value.header.pid, user_fifo_path);
   create_fifo(user_fifo_path);
-  int user_fifo_fd = open(user_fifo_path, O_RDONLY);
+  int user_fifo_fd = open(user_fifo_path, O_RDONLY | O_NONBLOCK);
   if (user_fifo_fd == -1) {
     printf("fifo '%s' can not be opened\n", user_fifo_path);
     exit(EXIT_FAILURE);

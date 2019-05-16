@@ -11,7 +11,7 @@
 #include "banking_aux.h"
 #include "constants.h"
 #include "general_aux.h"
-#include "request_queue.h"
+#include "list_queue.h"
 #include "sope.h"
 #include "types.h"
 
@@ -23,7 +23,7 @@ pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bank_account_sem_t accounts[MAX_BANK_ACCOUNTS];
-request_queue_t requests;
+list_queue_t requests;
 
 void exit_handler() {
   struct stat server_fifo;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
   srand(time(NULL));
   request_queue_init(&requests);
   /** Initiate threads**/
-  pthread_t threads[threads_number];  // TODO: Create server threads
+  pthread_t threads[threads_number];
   int threadsNumber[threads_number];
   for (int i = 0; i < threads_number; i++) {
     threadsNumber[i] = i + 1;

@@ -1,21 +1,23 @@
 #include <stdlib.h>
 #include "types.h"
 
+#define QUEUE_TYPE tlv_request_t
+
 typedef struct node {
-  tlv_request_t request;
+  QUEUE_TYPE request;
   struct node *next;
 } node_t;
 
-typedef struct request_queue {
+typedef struct list_queue {
   node_t *head;
   node_t *back;
   int size;
-  void (*push)(struct request_queue *req_queue, tlv_request_t *request);
-  void (*pop)(struct request_queue *req_queue);
-  tlv_request_t (*front)(struct request_queue *req_queue);
-} request_queue_t;
+  void (*push)(struct list_queue *req_queue, QUEUE_TYPE *request);
+  void (*pop)(struct list_queue *req_queue);
+  QUEUE_TYPE (*front)(struct list_queue *req_queue);
+} list_queue_t;
 
-void request_queue_push(request_queue_t *req_queue, tlv_request_t *request) {
+void list_queue_push(list_queue_t *req_queue, QUEUE_TYPE *request) {
   node_t *new_data = (node_t *)malloc(sizeof(node_t));
   new_data->request = *request;
   new_data->next = NULL;
@@ -29,7 +31,7 @@ void request_queue_push(request_queue_t *req_queue, tlv_request_t *request) {
   ++req_queue->size;
 }
 
-void request_queue_pop(request_queue_t *req_queue) {
+void list_queue_pop(list_queue_t *req_queue) {
   if (req_queue->head == NULL) return;
 
   node_t *poped_data = req_queue->head;
@@ -38,15 +40,15 @@ void request_queue_pop(request_queue_t *req_queue) {
   free(poped_data);
 }
 
-tlv_request_t request_queue_front(request_queue_t *req_queue) {
+QUEUE_TYPE list_queue_front(list_queue_t *req_queue) {
   return req_queue->head->request;
 }
 
-void request_queue_init(request_queue_t *req_queue) {
+void list_queue_init(list_queue_t *req_queue) {
   req_queue->head = NULL;
   req_queue->back = NULL;
   req_queue->size = 0;
-  req_queue->push = request_queue_push;
-  req_queue->pop = request_queue_pop;
-  req_queue->front = request_queue_front;
+  req_queue->push = list_queue_push;
+  req_queue->pop = list_queue_pop;
+  req_queue->front = list_queue_front;
 }
