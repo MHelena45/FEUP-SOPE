@@ -15,12 +15,11 @@
 #include "sope.h"
 #include "types.h"
 
-bool request_waiting = false;
 uint32_t shutdown_delay_ms;
 extern bool server_exit;
 extern int active_threads;
-pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+sem_t main_sem;
 
 bank_account_sem_t accounts[MAX_BANK_ACCOUNTS];
 list_queue_t requests;
@@ -36,19 +35,19 @@ void *read_request(void *arg) {
   int thread_id = *(int *)arg;
   /** Wait for signal **/
   while (!server_exit) {
-    lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, MAIN_THREAD_ID);
-    log_wait_cond(thread_id, SYNC_ROLE_CONSUMER, MAIN_THREAD_ID);
-    while (!request_waiting) {
-      pthread_cond_wait(&cond, &mutex);
+    wait_sem(&main_sem, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
+    // lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
+    if (server_exit) {
+      // unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
+      break;
     }
-    if (server_exit) break;
-
     /** Get request from the request queue and mark thread as active **/
+    lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
     tlv_request_t request = requests.front(&requests);
     requests.pop(&requests);
-
-    request_waiting = false;
     ++active_threads;
+    unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
+                 request.value.header.pid);
 
     tlv_reply_t reply;
     sem_t *acc_sem, *target_sem;
@@ -86,6 +85,7 @@ void *read_request(void *arg) {
       write(user_fifo_fd, &reply, sizeof(reply));
 
     /** Log reply **/
+
     log_reply(SERVER_LOGFILE, thread_id, &reply);
 
     /** Get program ready to shutdown if shutdown command is sucessful **/
@@ -97,8 +97,8 @@ void *read_request(void *arg) {
     /** Reset thread  **/
     memset(&reply, 0, sizeof(reply));
     --active_threads;
-    unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
-                 request.value.header.pid);
+    // unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
+    // request.value.header.pid);
     close(user_fifo_fd);
   }
   return NULL;
@@ -127,14 +127,15 @@ int main(int argc, char *argv[]) {
 
   /** Initiate random seed **/
   srand(time(NULL));
-  request_queue_init(&requests);
+  list_queue_init(&requests);
   /** Initiate threads**/
+  init_sem(&main_sem, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER, ADMIN_ACCOUNT_ID, 0);
   pthread_t threads[threads_number];
-  int threadsNumber[threads_number];
+  int thread_ids[threads_number];
   for (int i = 0; i < threads_number; i++) {
-    threadsNumber[i] = i + 1;
-    pthread_create(&threads[i], NULL, read_request, (void *)&threadsNumber[i]);
-    log_office_open(threadsNumber[i], threads[i]);
+    thread_ids[i] = i + 1;
+    pthread_create(&threads[i], NULL, read_request, (void *)&thread_ids[i]);
+    log_office_open(thread_ids[i], threads[i]);
   }
   /** Create admin account **/
   req_create_account_t admin_account;
@@ -155,22 +156,22 @@ int main(int argc, char *argv[]) {
   while (!server_exit) {
     if (read(server_fifo_fd, &request, sizeof(request)) > 0) {
       log_request(SERVER_LOGFILE, MAIN_THREAD_ID, &request);
+      lock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
       requests.push(&requests, &request);
-      lock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
-                 request.value.header.pid);
-      request_waiting = true;
-      signal_cond(&cond, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
-                  request.value.header.pid);
-      unlock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
+      unlock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_CONSUMER,
                    request.value.header.pid);
+      post_sem(&main_sem, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER,
+               request.value.header.pid);
     }
   }
   shutdown_delay(shutdown_delay_ms);
-  request_waiting = true;
-  pthread_cond_broadcast(&cond);
+  for (int i = 0; i < threads_number; i++) {
+    post_sem(&main_sem, MAIN_THREAD_ID, SYNC_ROLE_PRODUCER, ADMIN_ACCOUNT_ID);
+  }
+
   for (int i = 0; i < threads_number; i++) {
     pthread_join(threads[i], NULL);
-    log_office_close(threadsNumber[i], threads[i]);
+    log_office_close(thread_ids[i], threads[i]);
   }
 
   close(server_fifo_fd);

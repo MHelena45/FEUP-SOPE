@@ -17,9 +17,10 @@ void create_fifo(char* fifo_name) {
     if (errno == EEXIST) {
       remove_fifo(fifo_name);
       create_fifo(fifo_name);
-    } else
+    } else {
       printf("Can't create FIFO '%s'\n", fifo_name);
-    exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE);
+    }
   }
 }
 
