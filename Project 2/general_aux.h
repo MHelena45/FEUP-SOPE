@@ -22,16 +22,13 @@ void log_office_close(int id, pthread_t tid);
 void log_request(char *log_filename, int id, tlv_request_t *request);
 void log_account_creation(char *log_filename, int id, bank_account_t *account);
 void log_reply(char *log_filename, int id, tlv_reply_t *reply);
-void log_wait_cond(int id, sync_role_t role, int sid);
 
-void sync_delay(int id, int sid, uint32_t delay_ms);
-void shutdown_delay(uint32_t delay_ms);
+void lock_mutex(pthread_mutex_t *mutex, int id, sync_role_t role, int sid);
+void unlock_mutex(pthread_mutex_t *mutex, int id, sync_role_t role, int sid);
 
 void init_sem(sem_t *sem, int id, sync_role_t role, int sid, int val);
 void wait_sem(sem_t *sem, int id, sync_role_t role, int sid);
 void post_sem(sem_t *sem, int id, sync_role_t role, int sid);
 
-void lock_mutex(pthread_mutex_t *mutex, int id, sync_role_t role, int sid);
-void unlock_mutex(pthread_mutex_t *mutex, int id, sync_role_t role, int sid);
-
-void signal_cond(pthread_cond_t *cond, int id, sync_role_t role, int sid);
+void sync_delay(int id, int sid, uint32_t delay_ms);
+void shutdown_delay(uint32_t delay_ms);

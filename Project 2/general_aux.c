@@ -71,6 +71,14 @@ int get_string_arguments(char* arguments, char* argv[]) {
   return argc;
 }
 
+void generate_password_salt(char salt[]) {
+  for (int i = 0; i < SALT_LEN; ++i) {
+    int randomValue = rand() % 15;
+    sprintf(&salt[i], "%x", randomValue);
+  }
+  salt[SALT_LEN] = '\0';
+}
+
 void generate_sha256_hash(char* password, char salt[], char hash[]) {
   char sha256sum_command[MAXLINE];
   sprintf(sha256sum_command, "echo -n \"%s%s\" | shasum -a 256", password,
@@ -82,13 +90,6 @@ void generate_sha256_hash(char* password, char salt[], char hash[]) {
   hash[HASH_LEN] = '\0';
 }
 
-void generate_password_salt(char salt[]) {
-  for (int i = 0; i < SALT_LEN; ++i) {
-    int randomValue = rand() % 15;
-    sprintf(&salt[i], "%x", randomValue);
-  }
-  salt[SALT_LEN] = '\0';
-}
 void log_office_open(int id, pthread_t tid) {
   int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU);
   logBankOfficeOpen(log_fd, id, tid);
@@ -129,19 +130,6 @@ void unlock_mutex(pthread_mutex_t* mutex, int id, sync_role_t role, int sid) {
   pthread_mutex_unlock(mutex);
   int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU);
   logSyncMech(log_fd, id, SYNC_OP_MUTEX_UNLOCK, role, sid);
-  close(log_fd);
-}
-
-void signal_cond(pthread_cond_t* cond, int id, sync_role_t role, int sid) {
-  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU);
-  logSyncMech(log_fd, id, SYNC_OP_COND_SIGNAL, role, sid);
-  close(log_fd);
-  pthread_cond_signal(cond);
-}
-
-void log_wait_cond(int id, sync_role_t role, int sid) {
-  int log_fd = open(SERVER_LOGFILE, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU);
-  logSyncMech(log_fd, id, SYNC_OP_COND_WAIT, role, sid);
   close(log_fd);
 }
 
