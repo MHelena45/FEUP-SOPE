@@ -17,6 +17,7 @@
 
 uint32_t shutdown_delay_ms;
 extern bool server_exit;
+bool close_thread = false;
 extern int active_threads;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 sem_t main_sem;
@@ -34,11 +35,11 @@ void exit_handler() {
 void *read_request(void *arg) {
   int thread_id = *(int *)arg;
 
-  while (!server_exit) {
+  while (!close_thread) {
     /** Wait for request **/
     wait_sem(&main_sem, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
 
-    if (server_exit) break;
+    if (close_thread) break;
     /** Get request from the request queue and mark thread as active **/
     lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
     tlv_request_t request = requests.front(&requests);
@@ -87,6 +88,7 @@ void *read_request(void *arg) {
 
     /** Get program ready to shutdown if shutdown command is sucessful **/
     if (reply.type == OP_SHUTDOWN && reply.value.header.ret_code == RC_OK) {
+      chmod(SERVER_FIFO_PATH, S_IRUSR | S_IRGRP | S_IROTH);
       shutdown_delay_ms = request.value.header.op_delay_ms;
       server_exit = true;
     }
@@ -148,7 +150,10 @@ int main(int argc, char *argv[]) {
 
   /** Read and push requests to the queue **/
   tlv_request_t request;
-  while (!server_exit) {
+  while (!close_thread) {
+    if (server_exit && requests.size == 0) {
+      close_thread = true;
+    }
     if (read(server_fifo_fd, &request, sizeof(request)) > 0) {
       lock_mutex(&mutex, MAIN_THREAD_ID, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
       requests.push(&requests, &request);
@@ -175,7 +180,6 @@ int main(int argc, char *argv[]) {
       sem_destroy(&accounts[i].semaphore);
     }
   }
-
   close(server_fifo_fd);
   exit(EXIT_SUCCESS);
 }
