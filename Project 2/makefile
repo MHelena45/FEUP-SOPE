@@ -1,10 +1,10 @@
 all: user server
 
-user: banking_aux.c user.c log.c general_aux.c
-	gcc -Wall -Wextra banking_aux.c user.c log.c general_aux.c -o user -lpthread
+user: source/banking_aux.c source/user.c source/log.c source/general_aux.c
+	gcc -Wall -Wextra source/banking_aux.c source/user.c source/log.c source/general_aux.c -o user -lpthread
 
-server: banking_aux.c server.c log.c general_aux.c 
-	gcc -Wall -Wextra banking_aux.c server.c log.c general_aux.c -o server -lpthread
+server: source/banking_aux.c source/server.c source/log.c source/general_aux.c 
+	gcc -Wall -Wextra source/banking_aux.c source/server.c source/log.c source/general_aux.c -o server -lpthread
 
 clean:
 	rm -f *.o user
