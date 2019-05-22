@@ -44,22 +44,22 @@ void *read_request(void *arg) {
     lock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER, ADMIN_ACCOUNT_ID);
     tlv_request_t request = requests.front(&requests);
     requests.pop(&requests);
+    log_request(SERVER_LOGFILE, thread_id, &request);
     ++active_threads;
-    unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
-                 request.value.header.pid);
-
     tlv_reply_t reply;
     sem_t *acc_sem, *target_sem;
     acc_sem = &accounts[request.value.header.account_id].semaphore;
 
     /** Wait for access to requesting account and apply delay **/
-    wait_sem(acc_sem, thread_id, SYNC_ROLE_ACCOUNT,
-             request.value.header.account_id);
-    sync_delay(thread_id, request.value.header.account_id,
-               request.value.header.op_delay_ms);
-
+    if (accounts[request.value.header.account_id].active) {
+      wait_sem(acc_sem, thread_id, SYNC_ROLE_ACCOUNT,
+               request.value.header.account_id);
+      sync_delay(thread_id, request.value.header.account_id,
+                 request.value.header.op_delay_ms);
+    }
     /** Wait for access to target account if transfer and apply delay **/
-    if (request.type == OP_TRANSFER) {
+    if (request.type == OP_TRANSFER &&
+        accounts[request.value.transfer.account_id].active) {
       target_sem = &accounts[request.value.transfer.account_id].semaphore;
       wait_sem(target_sem, thread_id, SYNC_ROLE_ACCOUNT,
                request.value.transfer.account_id);
@@ -70,14 +70,16 @@ void *read_request(void *arg) {
     build_tlv_reply(&request, accounts, &reply, thread_id);
 
     /** Unlock accounts **/
-    post_sem(acc_sem, thread_id, SYNC_ROLE_ACCOUNT,
-             request.value.header.account_id);
-    if (request.type == OP_TRANSFER)
+    if (accounts[request.value.header.account_id].active)
+      post_sem(acc_sem, thread_id, SYNC_ROLE_ACCOUNT,
+               request.value.header.account_id);
+    if (request.type == OP_TRANSFER &&
+        accounts[request.value.transfer.account_id].active)
       post_sem(target_sem, thread_id, SYNC_ROLE_ACCOUNT,
                request.value.transfer.account_id);
-
     /** Write to user fifo if available **/
-    int user_fifo_fd = open_user_fifo(request.value.header.pid, O_WRONLY);
+    int user_fifo_fd =
+        open_user_fifo(request.value.header.pid, O_WRONLY | O_NONBLOCK);
     if (user_fifo_fd == -1)
       reply.value.header.ret_code = RC_USR_DOWN;
     else
@@ -85,6 +87,8 @@ void *read_request(void *arg) {
 
     /** Log reply **/
     log_reply(SERVER_LOGFILE, thread_id, &reply);
+    unlock_mutex(&mutex, thread_id, SYNC_ROLE_CONSUMER,
+                 request.value.header.pid);
 
     /** Get program ready to shutdown if shutdown command is sucessful **/
     if (reply.type == OP_SHUTDOWN && reply.value.header.ret_code == RC_OK) {
@@ -120,6 +124,9 @@ int main(int argc, char *argv[]) {
            MIN_PASSWORD_LEN, MAX_PASSWORD_LEN);
     exit(EXIT_FAILURE);
   }
+
+  /** Initiate accounts **/
+  for (int i = 0; i < MAX_BANK_ACCOUNTS; ++i) accounts[i].active = false;
 
   /** Initiate random seed **/
   srand(time(NULL));

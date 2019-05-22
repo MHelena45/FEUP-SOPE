@@ -24,6 +24,7 @@ bool create_bank_account(bank_account_sem_t acc[],
   generate_password_salt(acc[acc_id].bankAccount.salt);
   generate_sha256_hash(acc_data->password, acc[acc_id].bankAccount.salt,
                        acc[acc_id].bankAccount.hash);
+  acc[acc_id].active = true;
   log_account_creation(SERVER_LOGFILE, id, &acc[ADMIN_ACCOUNT_ID].bankAccount);
   init_sem(&acc[acc_id].semaphore, id, SYNC_ROLE_ACCOUNT, acc_id, 1);
   return true;
