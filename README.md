@@ -4,7 +4,7 @@ Second project simulates a bank server and client program. The server is multith
 The server and user comunicate using a named pipe(FIFO).
 
 
-#Collaborators
-Nuno Miguel Fernandes Marques
-Maria Helena Ferreira
-Ricardo Jorge de Araújo Ferreira
+# Collaborators
+* Nuno Miguel Fernandes Marques
+* Maria Helena Ferreira
+* Ricardo Jorge de Araújo Ferreira
