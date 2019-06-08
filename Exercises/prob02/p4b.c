@@ -16,7 +16,8 @@ struct student
 
 int main(int argc, char *argv[]){
 
-    int fd, nr, nw;
+    int fd;
+    size_t nr, nw;
     unsigned char buffer[BUFFER_SIZE];
 
     if(argc != 2){
@@ -32,8 +33,8 @@ int main(int argc, char *argv[]){
     }
 
     struct student students;
-    student.name = malloc(40);
-
+    students.name = malloc(50);
+ 
     printf("What's the name of the student ?\n");
     while((nr = read(STDIN_FILENO, buffer, BUFFER_SIZE))){
         if(nr <= 1)
