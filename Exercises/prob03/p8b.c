@@ -1,4 +1,4 @@
-// PROGRAMA p8.c
+// PROGRAMA p8b.c
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -16,7 +16,7 @@ int main(int argc, char *argv[], char *envp[])
         printf("My child is going to execute command \"ls -laR %s\"\n", argv[1]);
     else if (pid == 0)
     {
-        execlp("ls", "ls","-laR", NULL );
+        execl("/bin/ls", "/bin/ls","-laR", argv[1],NULL );
         printf("Command not executed !\n");
         exit(1);
     }
